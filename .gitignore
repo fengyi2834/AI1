@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Node
+node_modules/
+
+# Local env
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+data/
+tmp/
+workspace/
+raw_docs/
+clean_text/
+import_ready/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI 客服 Demo</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">广西亿库光养硅藻环保科技有限公司</p>
+        <h1>官网 AI 客服接入演示</h1>
+        <p class="lead">
+          最小可用版只需要一个嵌入页、留资表单和转人工入口，依托
+          FastGPT + 智谱 GLM-5.1 即可快速降低人工成本。
+        </p>
+      </section>
+
+      <section class="panel">
+        <header>
+          <h2>嵌入式客服模拟器</h2>
+          <p>模拟官网悬浮客服反馈链路，支持文字输入与智能预热提示。</p>
+        </header>
+        <div class="chat">
+          <div id="chatLog" class="chat-log"></div>
+          <form id="chatForm" class="chat-form">
+            <input
+              id="chatInput"
+              type="text"
+              placeholder="请输入你的问题，例如：最近有什么促销？"
+              autocomplete="off"
+              required
+            />
+            <button type="submit">发送</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header>
+          <h2>留资表单</h2>
+          <p>必要时由 AI 推动并收集客户联系方式与项目意向。</p>
+        </header>
+        <form id="leadForm" class="stack">
+          <label>
+            <span>姓名</span>
+            <input type="text" name="name" placeholder="李先生/小姐" required />
+          </label>
+          <label>
+            <span>联系方式</span>
+            <input
+              type="text"
+              name="contact"
+              placeholder="手机号 / 微信号"
+              required
+            />
+          </label>
+          <label>
+            <span>关注产品</span>
+            <select name="product">
+              <option value="硅藻板">硅藻板解决方案</option>
+              <option value="光养">光养系统</option>
+              <option value="其他">其他</option>
+            </select>
+          </label>
+          <button type="submit" class="primary">提交留资</button>
+          <p class="hint">提交后会同步到后台 CRM/Lark 群，并推送到人工客服。</p>
+        </form>
+      </section>
+
+      <section class="panel">
+        <header>
+          <h2>转人工入口</h2>
+          <p>当智能判断无法完成或用户要求转人工时可立即触发。</p>
+        </header>
+        <div class="cta">
+          <p>
+            遇到高复杂度项目、敏感政策或报价需求时，请点击
+            <strong>“人工协助”</strong>，我会立刻记录并提示人工客服接入。
+          </p>
+          <button id="handoff" class="secondary">人工协助</button>
+        </div>
+      </section>
+
+      <section class="panel instructions">
+        <header>
+          <h2>接入说明</h2>
+        </header>
+        <ul>
+          <li>接口假定部署在 `/api/ai/chat`，接受 `{ question, history }`。</li>
+          <li>FastGPT 负责对接 GLM-5.1/Embedding-3，moderation + GLM-4-Flash 质检。</li>
+          <li>留资表单可 POST 到 `/api/ai/lead`，包含 `name`、`contact`、`product`。</li>
+          <li>人工转人工入口调用 `/api/ai/handoff`，返回 `status: "queued"` 为准。</li>
+          <li>所有请求按 JSON 交互，响应结构为 `{ answer: string, sessionId?: string }`。</li>
+          <li>若页面部署在静态 CDN，只需合并 `css/style.css` 与 `js/app.js`。</li>
+        </ul>
+      </section>
+    </main>
+    <script src="js/app.js"></script>
+  </body>
+</html>

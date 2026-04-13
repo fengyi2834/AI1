@@ -6,7 +6,7 @@
   },
   "provider": {
     "name": "zhipu",
-    "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
+    "baseUrl": "https://open.bigmodel.cn/api/paas/v4/",
     "apiKeyEnv": "ZHIPU_API_KEY"
   },
   "models": [
@@ -14,13 +14,16 @@
       "id": "glm-5.1",
       "type": "chat",
       "name": "GLM-5.1",
-      "contextWindow": 128000,
-      "maxOutputTokens": 4096,
+      "contextWindow": 200000,
+      "maxOutputTokens": 4000,
       "temperature": 0.2,
       "topP": 0.8,
       "timeoutMs": 60000,
       "stream": true,
-      "useFor": ["assistant", "router"]
+      "useFor": [
+        "assistant",
+        "router"
+      ]
     },
     {
       "id": "glm-4-flash-250414",
@@ -32,7 +35,9 @@
       "topP": 0.7,
       "timeoutMs": 30000,
       "stream": false,
-      "useFor": ["quality_check"]
+      "useFor": [
+        "quality_check"
+      ]
     }
   ],
   "embeddings": [
@@ -41,14 +46,19 @@
       "name": "Embedding-3",
       "dimensions": 1024,
       "normalize": true,
-      "useFor": ["kb_retrieval"]
+      "useFor": [
+        "kb_retrieval"
+      ]
     }
   ],
   "moderation": [
     {
       "id": "moderation",
       "name": "Zhipu Moderation",
-      "useFor": ["input_guard", "output_guard"]
+      "useFor": [
+        "input_guard",
+        "output_guard"
+      ]
     }
   ],
   "placeholders": {

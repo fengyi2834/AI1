@@ -73,8 +73,14 @@
       "name": "留资/转人工路由",
       "config": {
         "conditions": [
-          { "if": "needs_handoff == true", "to": "n_handoff" },
-          { "if": "risk_level == 'high'", "to": "n_handoff" }
+          {
+            "if": "needs_handoff == true",
+            "to": "n_handoff"
+          },
+          {
+            "if": "risk_level == 'high'",
+            "to": "n_handoff"
+          }
         ],
         "default": "n_output"
       }
@@ -102,13 +108,37 @@
     }
   ],
   "edges": [
-    { "from": "n_input", "to": "n_moderation_in" },
-    { "from": "n_moderation_in", "to": "n_retrieval" },
-    { "from": "n_retrieval", "to": "n_assistant" },
-    { "from": "n_assistant", "to": "n_quality_check" },
-    { "from": "n_quality_check", "to": "n_moderation_out" },
-    { "from": "n_moderation_out", "to": "n_lead_router" },
-    { "from": "n_lead_router", "to": "n_output" },
-    { "from": "n_lead_router", "to": "n_handoff" }
+    {
+      "from": "n_input",
+      "to": "n_moderation_in"
+    },
+    {
+      "from": "n_moderation_in",
+      "to": "n_retrieval"
+    },
+    {
+      "from": "n_retrieval",
+      "to": "n_assistant"
+    },
+    {
+      "from": "n_assistant",
+      "to": "n_quality_check"
+    },
+    {
+      "from": "n_quality_check",
+      "to": "n_moderation_out"
+    },
+    {
+      "from": "n_moderation_out",
+      "to": "n_lead_router"
+    },
+    {
+      "from": "n_lead_router",
+      "to": "n_output"
+    },
+    {
+      "from": "n_lead_router",
+      "to": "n_handoff"
+    }
   ]
 }

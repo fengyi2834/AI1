@@ -1,0 +1,355 @@
+name: yiku-fastgpt-local
+
+x-default-root-psw: &x-default-root-psw ${DEFAULT_ROOT_PSW:-1234}
+x-system-key: &x-system-key ${ROOT_KEY:-fastgpt-root-key}
+x-plugin-auth-token: &x-plugin-auth-token ${PLUGIN_TOKEN:-fastgpt-plugin-token}
+x-code-sandbox-token: &x-code-sandbox-token ${CODE_SANDBOX_TOKEN:-fastgpt-code-sandbox-token}
+x-volume-manager-auth-token: &x-volume-manager-auth-token ${VOLUME_MANAGER_TOKEN:-fastgpt-volume-manager-token}
+x-aiproxy-token: &x-aiproxy-token ${AIPROXY_API_TOKEN:-fastgpt-aiproxy-token}
+x-log-config: &x-log-config
+  LOG_ENABLE_CONSOLE: "true"
+  LOG_CONSOLE_LEVEL: ${LOG_CONSOLE_LEVEL:-info}
+  LOG_ENABLE_OTEL: "false"
+  LOG_OTEL_LEVEL: info
+  LOG_OTEL_URL: http://localhost:4318/v1/logs
+x-share-db-config: &x-share-db-config
+  MONGODB_URI: mongodb://${MONGO_USER:-myusername}:${MONGO_PASSWORD:-mypassword}@fastgpt-mongo:27017/fastgpt?authSource=admin
+  DB_MAX_LINK: ${DB_MAX_LINK:-30}
+  REDIS_URL: redis://default:${REDIS_PASSWORD:-mypassword}@fastgpt-redis:6379
+  STORAGE_VENDOR: minio
+  STORAGE_REGION: ${STORAGE_REGION:-us-east-1}
+  STORAGE_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+  STORAGE_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+  STORAGE_PUBLIC_BUCKET: ${STORAGE_PUBLIC_BUCKET:-fastgpt-public}
+  STORAGE_PRIVATE_BUCKET: ${STORAGE_PRIVATE_BUCKET:-fastgpt-private}
+  STORAGE_EXTERNAL_ENDPOINT: ${STORAGE_EXTERNAL_ENDPOINT:-http://host.docker.internal:9000}
+  STORAGE_S3_ENDPOINT: http://fastgpt-minio:9000
+  STORAGE_S3_FORCE_PATH_STYLE: "true"
+  STORAGE_S3_MAX_RETRIES: "3"
+x-vec-config: &x-vec-config
+  PG_URL: postgresql://${PG_USER:-username}:${PG_PASSWORD:-password}@fastgpt-pg:5432/${PG_DB:-postgres}
+
+services:
+  fastgpt-pg:
+    image: pgvector/pgvector:0.8.0-pg15
+    container_name: fastgpt-pg
+    restart: always
+    networks:
+      - fastgpt
+    environment:
+      POSTGRES_USER: ${PG_USER:-username}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-password}
+      POSTGRES_DB: ${PG_DB:-postgres}
+    volumes:
+      - ./runtime/pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${PG_USER:-username}", "-d", "${PG_DB:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  fastgpt-mongo:
+    image: mongo:${MONGO_IMAGE_TAG:-5.0.32}
+    container_name: fastgpt-mongo
+    restart: always
+    networks:
+      - fastgpt
+    command: mongod --keyFile /data/mongodb.key --replSet rs0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-myusername}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mypassword}
+    volumes:
+      - ./runtime/mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongo", "-u", "${MONGO_USER:-myusername}", "-p", "${MONGO_PASSWORD:-mypassword}", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    entrypoint:
+      - bash
+      - -c
+      - |
+        openssl rand -base64 128 > /data/mongodb.key
+        chmod 400 /data/mongodb.key
+        chown 999:999 /data/mongodb.key
+        echo 'const isInited = rs.status().ok === 1
+        if(!isInited){
+          rs.initiate({
+            _id: "rs0",
+            members: [
+              { _id: 0, host: "fastgpt-mongo:27017" }
+            ]
+          })
+        }' > /data/initReplicaSet.js
+        exec docker-entrypoint.sh "$$@" &
+        until mongo -u ${MONGO_USER:-myusername} -p ${MONGO_PASSWORD:-mypassword} --authenticationDatabase admin --eval "print('waited for connection')"; do
+          echo "Waiting for MongoDB to start..."
+          sleep 2
+        done
+        mongo -u ${MONGO_USER:-myusername} -p ${MONGO_PASSWORD:-mypassword} --authenticationDatabase admin /data/initReplicaSet.js
+        wait $$!
+
+  fastgpt-redis:
+    image: redis:7.2-alpine
+    container_name: fastgpt-redis
+    restart: always
+    networks:
+      - fastgpt
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD:-mypassword}
+      --loglevel warning
+      --maxclients 10000
+      --appendonly yes
+      --save 60 10
+      --maxmemory 1gb
+      --maxmemory-policy noeviction
+    volumes:
+      - ./runtime/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-mypassword}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+
+  fastgpt-minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: fastgpt-minio
+    restart: always
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    networks:
+      - fastgpt
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - ./runtime/minio:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  fastgpt-code-sandbox:
+    image: ghcr.io/labring/fastgpt-code-sandbox:${FASTGPT_CODE_SANDBOX_IMAGE_TAG:-v4.14.10}
+    container_name: fastgpt-code-sandbox
+    restart: always
+    networks:
+      - fastgpt
+    environment:
+      <<: *x-log-config
+      LOG_OTEL_SERVICE_NAME: fastgpt-code-sandbox
+      SANDBOX_TOKEN: *x-code-sandbox-token
+      SANDBOX_MAX_TIMEOUT: "60000"
+      SANDBOX_MAX_MEMORY_MB: "256"
+      SANDBOX_POOL_SIZE: "10"
+      CHECK_INTERNAL_IP: "false"
+      SANDBOX_REQUEST_MAX_COUNT: "30"
+      SANDBOX_REQUEST_TIMEOUT: "60000"
+      SANDBOX_REQUEST_MAX_RESPONSE_MB: "10"
+      SANDBOX_REQUEST_MAX_BODY_MB: "5"
+      SANDBOX_JS_ALLOWED_MODULES: lodash,dayjs,moment,uuid,crypto-js,qs,url,querystring
+      SANDBOX_PYTHON_ALLOWED_MODULES: math,datetime,time,json,csv,re,typing,uuid,numpy,pandas
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  fastgpt-plugin:
+    image: ghcr.io/labring/fastgpt-plugin:${FASTGPT_PLUGIN_IMAGE_TAG:-v0.5.6}
+    container_name: fastgpt-plugin
+    restart: always
+    depends_on:
+      fastgpt-minio:
+        condition: service_healthy
+    networks:
+      - fastgpt
+    environment:
+      <<: [*x-share-db-config, *x-log-config]
+      AUTH_TOKEN: *x-plugin-auth-token
+      SERVICE_REQUEST_MAX_CONTENT_LENGTH: "10"
+      MAX_API_SIZE: "10"
+      LOG_OTEL_SERVICE_NAME: fastgpt-plugin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  opensandbox-server:
+    image: opensandbox/server:v0.1.9
+    container_name: fastgpt-opensandbox-server
+    restart: always
+    networks:
+      - fastgpt
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    configs:
+      - source: opensandbox-config
+        target: /etc/opensandbox/config.toml
+    environment:
+      SANDBOX_CONFIG_PATH: /etc/opensandbox/config.toml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  fastgpt-volume-manager:
+    image: ghcr.io/labring/fastgpt-agent-volume-manager:v0.1
+    container_name: fastgpt-volume-manager
+    restart: always
+    networks:
+      - fastgpt
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      PORT: "3000"
+      VM_RUNTIME: docker
+      VM_AUTH_TOKEN: *x-volume-manager-auth-token
+      VM_VOLUME_NAME_PREFIX: fastgpt-session
+      VM_LOG_LEVEL: info
+      VM_DOCKER_API_VERSION: v1.44
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://localhost:3000/health').then((res) => { if (!res.ok) throw new Error(String(res.status)); })"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  fastgpt-aiproxy-pg:
+    image: pgvector/pgvector:0.8.0-pg15
+    container_name: fastgpt-aiproxy-pg
+    restart: unless-stopped
+    volumes:
+      - ./runtime/aiproxy_pg:/var/lib/postgresql/data
+    networks:
+      - aiproxy
+    environment:
+      TZ: Asia/Shanghai
+      POSTGRES_USER: postgres
+      POSTGRES_DB: aiproxy
+      POSTGRES_PASSWORD: aiproxy
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "aiproxy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  fastgpt-aiproxy:
+    image: ghcr.io/labring/aiproxy:${AIPROXY_IMAGE_TAG:-v0.3.5}
+    container_name: fastgpt-aiproxy
+    restart: unless-stopped
+    depends_on:
+      fastgpt-aiproxy-pg:
+        condition: service_healthy
+    networks:
+      - fastgpt
+      - aiproxy
+    environment:
+      ADMIN_KEY: *x-aiproxy-token
+      LOG_DETAIL_STORAGE_HOURS: "1"
+      SQL_DSN: postgres://postgres:aiproxy@fastgpt-aiproxy-pg:5432/aiproxy
+      RETRY_TIMES: "3"
+      BILLING_ENABLED: "false"
+      DISABLE_MODEL_CONFIG: "true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/status"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  fastgpt-app:
+    image: ghcr.io/labring/fastgpt:${FASTGPT_IMAGE_TAG:-v4.14.10.1}
+    container_name: fastgpt-app
+    ports:
+      - "${FASTGPT_PORT:-3000}:3000"
+    depends_on:
+      - fastgpt-mongo
+      - fastgpt-code-sandbox
+      - fastgpt-pg
+    restart: always
+    networks:
+      - fastgpt
+    environment:
+      <<: [*x-share-db-config, *x-vec-config, *x-log-config]
+      FE_DOMAIN: ${FE_DOMAIN:-http://localhost:3000}
+      ROOT_KEY: *x-system-key
+      DEFAULT_ROOT_PSW: *x-default-root-psw
+      SYNC_INDEX: "1"
+      TOKEN_KEY: ${TOKEN_KEY:-fastgpt}
+      FILE_TOKEN_KEY: ${FILE_TOKEN_KEY:-filetokenkey}
+      AES256_SECRET_KEY: ${AES256_SECRET_KEY:-fastgptsecret}
+      MULTIPLE_DATA_TO_BASE64: "true"
+      PLUGIN_BASE_URL: http://fastgpt-plugin:3000
+      PLUGIN_TOKEN: *x-plugin-auth-token
+      CODE_SANDBOX_URL: http://fastgpt-code-sandbox:3000
+      CODE_SANDBOX_TOKEN: *x-code-sandbox-token
+      AIPROXY_API_ENDPOINT: http://fastgpt-aiproxy:3000
+      AIPROXY_API_TOKEN: *x-aiproxy-token
+      AGENT_SANDBOX_PROVIDER: opensandbox
+      AGENT_SANDBOX_OPENSANDBOX_BASEURL: http://opensandbox-server:8090
+      AGENT_SANDBOX_OPENSANDBOX_API_KEY: ""
+      AGENT_SANDBOX_OPENSANDBOX_RUNTIME: docker
+      AGENT_SANDBOX_OPENSANDBOX_IMAGE_REPO: ghcr.io/labring/fastgpt-agent-sandbox
+      AGENT_SANDBOX_OPENSANDBOX_IMAGE_TAG: v0.1
+      AGENT_SANDBOX_ENABLE_VOLUME: "true"
+      AGENT_SANDBOX_VOLUME_MANAGER_URL: http://fastgpt-volume-manager:3000
+      AGENT_SANDBOX_VOLUME_MANAGER_TOKEN: *x-volume-manager-auth-token
+      LOG_OTEL_SERVICE_NAME: fastgpt-client
+      USE_IP_LIMIT: "false"
+      WORKFLOW_MAX_RUN_TIMES: "1000"
+      WORKFLOW_MAX_LOOP_TIMES: "100"
+      SERVICE_REQUEST_MAX_CONTENT_LENGTH: "10"
+      CHECK_INTERNAL_IP: "false"
+      UPLOAD_FILE_MAX_SIZE: "1000"
+      UPLOAD_FILE_MAX_AMOUNT: "1000"
+      LLM_REQUEST_TRACKING_RETENTION_HOURS: "6"
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      MAX_HTML_TRANSFORM_CHARS: "1000000"
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      CHAT_API_KEY: ${CHAT_API_KEY:-}
+    volumes:
+      - ./config.json:/app/data/config.json
+
+  fastgpt-mcp-server:
+    image: ghcr.io/labring/fastgpt-mcp_server:${FASTGPT_MCP_SERVER_IMAGE_TAG:-v4.14.3}
+    container_name: fastgpt-mcp-server
+    ports:
+      - "${FASTGPT_MCP_PORT:-3005}:3000"
+    restart: always
+    networks:
+      - fastgpt
+    environment:
+      <<: *x-log-config
+      FASTGPT_ENDPOINT: http://fastgpt-app:3000
+
+networks:
+  fastgpt:
+  aiproxy:
+
+volumes: {}
+
+configs:
+  opensandbox-config:
+    content: |
+      [server]
+      host = "0.0.0.0"
+      port = 8090
+      log_level = "INFO"
+
+      [runtime]
+      type = "docker"
+      execd_image = "opensandbox/execd:v1.0.7"
+
+      [egress]
+      image = "opensandbox/egress:v1.0.3"
+
+      [docker]
+      network_mode = "bridge"
+      host_ip = "host.docker.internal"

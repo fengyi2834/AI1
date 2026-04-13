@@ -1,18 +1,29 @@
-# FastGPT 配置模板（广西亿库 AI 客服）
+# FastGPT 模板配置
 
-本目录提供 FastGPT 侧的可执行模板，面向“广西亿库光养硅藻环保科技有限公司”AI 客服场景。
+这里放的是“适合广西亿库当前阶段”的 FastGPT 模板。
 
-包含内容：
-- `model.zhipu.template.json`: 智谱模型配置模板（GLM-5.1 + Embedding-3 + moderation + GLM-4-Flash 质检）。
-- `kb_structure.md`: 知识库目录与资料整理模板（从 xlsx/docx 起步）。
-- `prompts/system_prompt.md`: 系统提示词模板（客服口径与风险边界）。
-- `workflows/cs_workflow.example.json`: 工作流/节点配置示例（可按 FastGPT 导入或手工搭建）。
-- `nodes/node_templates.md`: 节点参数配置片段示例。
+说明：
+- 这些文件优先作为“人工配置模板”和“工作流蓝图”使用
+- 不保证所有 JSON 都能直接一键导入 FastGPT
+- 但可以直接指导后台模型配置、知识库整理和工作流搭建
 
-使用方式（与其他模块协作）：
-1. 将 `model.zhipu.template.json` 的占位符替换为真实 API Key/URL，并导入 FastGPT 的模型配置。
-2. 按 `kb_structure.md` 先把原始 `xlsx/docx` 资料清洗为 Markdown/FAQ，再导入知识库。
-3. 把 `prompts/system_prompt.md` 贴到 FastGPT 的系统提示词或主客服节点提示词。
-4. 按 `workflows/cs_workflow.example.json` 搭建工作流节点（或参考 `nodes/node_templates.md` 手工配置）。
+## 文件说明
 
-注意：模板仅提供结构和字段示例，不包含任何真实密钥或生产路径。
+- `model.zhipu.template.json`
+  智谱模型配置模板
+- `kb_structure.md`
+  知识库目录与切片建议
+- `prompts/system_prompt.md`
+  主客服系统提示词模板
+- `workflows/cs_workflow.example.json`
+  客服工作流蓝图
+- `nodes/node_templates.md`
+  常用节点配置片段
+
+## 使用顺序
+
+1. 先按 `kb_structure.md` 整理 `xlsx/docx`
+2. 在 FastGPT 后台按 `model.zhipu.template.json` 配模型
+3. 把 `prompts/system_prompt.md` 用到主客服应用
+4. 按 `workflows/cs_workflow.example.json` 搭完整流程
+5. 参考 `nodes/node_templates.md` 做节点微调

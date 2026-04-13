@@ -1,0 +1,9 @@
+{
+  "input": "./raw_docs",
+  "output": "./out",
+  "format": "md,json,csv",
+  "recursive": true,
+  "docx_tables": true,
+  "normalize_spaces": true,
+  "max_chars": 1500
+}
