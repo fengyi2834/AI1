@@ -1,0 +1,114 @@
+{
+  "meta": {
+    "template": true,
+    "name": "gx_yiku_customer_service_flow",
+    "description": "广西亿库 AI 客服工作流示例（输入审核 -> 检索 -> 主模型 -> 质检 -> 输出审核 -> 留资/转人工）"
+  },
+  "variables": {
+    "company_name": "广西亿库光养硅藻环保科技有限公司",
+    "contact_phone": "{{CONTACT_PHONE}}",
+    "contact_wechat": "{{CONTACT_WECHAT}}",
+    "website": "{{WEBSITE}}"
+  },
+  "nodes": [
+    {
+      "id": "n_input",
+      "type": "input",
+      "name": "用户输入"
+    },
+    {
+      "id": "n_moderation_in",
+      "type": "moderation",
+      "name": "输入审核",
+      "config": {
+        "model": "moderation",
+        "onBlock": "n_output_blocked"
+      }
+    },
+    {
+      "id": "n_retrieval",
+      "type": "kb_retrieval",
+      "name": "知识库检索",
+      "config": {
+        "embeddingModel": "embedding-3",
+        "topK": 5,
+        "scoreThreshold": 0.35,
+        "maxTokens": 1200
+      }
+    },
+    {
+      "id": "n_assistant",
+      "type": "llm",
+      "name": "主客服回答",
+      "config": {
+        "model": "glm-5.1",
+        "systemPromptRef": "prompts/system_prompt.md",
+        "temperature": 0.2,
+        "maxOutputTokens": 600
+      }
+    },
+    {
+      "id": "n_quality_check",
+      "type": "llm",
+      "name": "质检复核",
+      "config": {
+        "model": "glm-4-flash-250414",
+        "temperature": 0.1,
+        "maxOutputTokens": 400,
+        "instruction": "检查是否超出知识库、是否夸大宣传、是否需要转人工，必要时标记风险。"
+      }
+    },
+    {
+      "id": "n_moderation_out",
+      "type": "moderation",
+      "name": "输出审核",
+      "config": {
+        "model": "moderation",
+        "onBlock": "n_output_blocked"
+      }
+    },
+    {
+      "id": "n_lead_router",
+      "type": "rule_router",
+      "name": "留资/转人工路由",
+      "config": {
+        "conditions": [
+          { "if": "needs_handoff == true", "to": "n_handoff" },
+          { "if": "risk_level == 'high'", "to": "n_handoff" }
+        ],
+        "default": "n_output"
+      }
+    },
+    {
+      "id": "n_handoff",
+      "type": "handoff",
+      "name": "转人工",
+      "config": {
+        "message": "已为您转接人工客服，请留下联系方式以便尽快联系您。"
+      }
+    },
+    {
+      "id": "n_output",
+      "type": "output",
+      "name": "正常输出"
+    },
+    {
+      "id": "n_output_blocked",
+      "type": "output",
+      "name": "安全拦截输出",
+      "config": {
+        "message": "抱歉，当前问题涉及敏感或不适合公开的内容，建议联系人工客服咨询。"
+      }
+    }
+  ],
+  "edges": [
+    { "from": "n_input", "to": "n_moderation_in" },
+    { "from": "n_moderation_in", "to": "n_retrieval" },
+    { "from": "n_retrieval", "to": "n_assistant" },
+    { "from": "n_assistant", "to": "n_quality_check" },
+    { "from": "n_quality_check", "to": "n_moderation_out" },
+    { "from": "n_moderation_out", "to": "n_lead_router" },
+    { "from": "n_lead_router", "to": "n_output" },
+    { "from": "n_lead_router", "to": "n_handoff" }
+  ]
+}

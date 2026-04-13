@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "template": true,
+    "owner": "广西亿库光养硅藻环保科技有限公司",
+    "description": "FastGPT + 智谱模型配置模板（客服场景）"
+  },
+  "provider": {
+    "name": "zhipu",
+    "baseUrl": "https://open.bigmodel.cn/api/paas/v4",
+    "apiKeyEnv": "ZHIPU_API_KEY"
+  },
+  "models": [
+    {
+      "id": "glm-5.1",
+      "type": "chat",
+      "name": "GLM-5.1",
+      "contextWindow": 128000,
+      "maxOutputTokens": 4096,
+      "temperature": 0.2,
+      "topP": 0.8,
+      "timeoutMs": 60000,
+      "stream": true,
+      "useFor": ["assistant", "router"]
+    },
+    {
+      "id": "glm-4-flash-250414",
+      "type": "chat",
+      "name": "GLM-4-Flash-250414",
+      "contextWindow": 128000,
+      "maxOutputTokens": 2048,
+      "temperature": 0.1,
+      "topP": 0.7,
+      "timeoutMs": 30000,
+      "stream": false,
+      "useFor": ["quality_check"]
+    }
+  ],
+  "embeddings": [
+    {
+      "id": "embedding-3",
+      "name": "Embedding-3",
+      "dimensions": 1024,
+      "normalize": true,
+      "useFor": ["kb_retrieval"]
+    }
+  ],
+  "moderation": [
+    {
+      "id": "moderation",
+      "name": "Zhipu Moderation",
+      "useFor": ["input_guard", "output_guard"]
+    }
+  ],
+  "placeholders": {
+    "ZHIPU_API_KEY": "替换为真实 Key",
+    "TIMEOUT_MS": "按环境调整，建议 30s-60s",
+    "MAX_OUTPUT_TOKENS": "按业务回答长度调整"
+  }
+}
