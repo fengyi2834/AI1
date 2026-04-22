@@ -13,6 +13,13 @@
 
 ## 快速启动
 
+<div style="border:2px solid #d92d20;padding:12px 14px;border-radius:10px;background:#fff1f0;color:#a61b1b;margin:12px 0;">
+  <strong>红色提醒：</strong> 当前仓库可以先用 <code>data/raw_docs</code> 里的模拟 <code>xlsx/docx</code> 做联调，
+  但真正接智谱模型前，必须打开 <code>infra/fastgpt/.env.local</code>，
+  把 <code>CHAT_API_KEY=__REPLACE_WITH_REAL_ZHIPU_API_KEY_BEFORE_REAL_RUN__</code>
+  改成你的真实 API Key。
+</div>
+
 1. 复制环境变量模板
 
 ```powershell
@@ -26,6 +33,12 @@ Copy-Item .\infra\fastgpt\.env.example .\infra\fastgpt\.env.local
 - `OPENAI_BASE_URL`
 - `CHAT_API_KEY`
 
+如果你只是先跑模拟数据：
+
+- `OPENAI_BASE_URL` 可以先保留当前智谱兼容地址
+- `CHAT_API_KEY` 可以暂时保留占位值，但这时不要把页面当成“真实模型已接通”
+- 一旦开始真联调，第一件事就是替换 `CHAT_API_KEY`
+
 3. 启动服务
 
 ```powershell
@@ -37,6 +50,12 @@ Copy-Item .\infra\fastgpt\.env.example .\infra\fastgpt\.env.local
 - FastGPT: `http://localhost:3000`
 - MinIO Console: `http://localhost:9001`
 - MCP Server: `http://localhost:3005`
+
+按当前仓库里的本地配置启动时，实际常用端口通常是：
+
+- FastGPT: `http://localhost:3100`
+- MinIO Console: `http://localhost:9101`
+- MCP Server: `http://localhost:3105`
 
 默认 root 账号：
 

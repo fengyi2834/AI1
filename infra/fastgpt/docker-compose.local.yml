@@ -163,7 +163,7 @@ services:
 
   fastgpt-plugin:
     image: ghcr.io/labring/fastgpt-plugin:${FASTGPT_PLUGIN_IMAGE_TAG:-v0.5.6}
-    container_name: fastgpt-plugin
+    container_name: fastgpt-plugin-local
     restart: always
     depends_on:
       fastgpt-minio:

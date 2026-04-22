@@ -18,6 +18,7 @@ logs/
 
 # Runtime data
 data/
+infra/fastgpt/runtime/
 tmp/
 workspace/
 raw_docs/
