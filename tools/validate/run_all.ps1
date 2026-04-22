@@ -4,7 +4,7 @@ param(
     [Parameter(Mandatory = $false)]
     [string]$ImportPath = ".\\data\\import_ready",
     [Parameter(Mandatory = $false)]
-    [string]$ConfigPath = ".\\.env"
+    [string]$ConfigPath = ".\\infra\\fastgpt\\.env.local"
 )
 
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path

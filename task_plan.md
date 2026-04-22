@@ -39,3 +39,16 @@
 3. 填写 `infra/fastgpt/.env.local` 中的智谱配置
 4. 本地启动 Docker 开发环境
 5. 导入知识资料并联调官网 Demo
+## 2026-04-22 Startup Audit
+- Status: core FastGPT stack can start and is currently reachable on `http://127.0.0.1:3100`
+- Status: MinIO console is reachable on `http://127.0.0.1:9101`
+- Status: demo server script was rebuilt and can be started successfully through `scripts/start-demo.ps1`
+- Risk: local `.venv` is not portable after copy or move; its Python launcher is broken on this machine
+- Risk: `tools/validate/check_config.ps1` currently fails to parse `infra/fastgpt/.env.local` even though the file contains the required keys
+
+## 2026-04-22 Validation Repair
+- Status: `tools/validate/check_config.ps1` now correctly parses `infra/fastgpt/.env.local`
+- Status: `tools/validate/run_all.ps1` now points at the repo's real FastGPT env file by default
+- Status: `.venv` was rebuilt successfully and verified with `openpyxl` and `python-docx`
+- Status: `scripts/rebuild-venv.ps1` was added so the environment can be repaired again after future copy or move operations
+- Note: delegated workers failed with upstream `503`, so the final repair was completed locally by the main agent

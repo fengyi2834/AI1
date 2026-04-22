@@ -231,3 +231,24 @@ ChatWiki 官方仓库 LICENSE 明确写到：
 - 内容安全：moderation
 - 业务质检：GLM-4-Flash-250414
 - 渠道：官网优先，微信第二阶段接入
+## 2026-04-22 Startup Findings
+- `docker compose ... ps` shows the FastGPT stack is up, including `fastgpt-app`, Mongo, Redis, MinIO, Postgres, plugin, and MCP server.
+- `http://127.0.0.1:3100` returns HTTP 200, so the main FastGPT web app is reachable.
+- `http://127.0.0.1:9101` returns HTTP 200, so the MinIO console is reachable.
+- `fastgpt-code-sandbox` and `opensandbox-server` show `unhealthy`, but Docker health details show the probe itself is failing because `curl` is missing in the container image. Logs still show successful startup and HTTP 200 sandbox responses.
+- Local raw-doc and import-output validation scripts succeed when run with `-ExecutionPolicy Bypass`.
+- `.venv\\Scripts\\python.exe` is broken after the project was copied; the launcher still points at a missing base interpreter, so local Python-based workflows should not rely on this copied venv.
+- `scripts/demo-server.ps1` had become syntactically corrupted and was replaced with a clean server implementation that preserves the same demo API routes and static-file serving behavior.
+- `scripts/start-demo.ps1` now acts as a reliable foreground starter. A child-process verification against port `8104` returned HTTP 200.
+- `tools/validate/check_config.ps1` still reports all keys missing for `infra/fastgpt/.env.local`; this looks like a parser or file-format compatibility issue rather than missing values.
+
+## 2026-04-22 Validation Repair Findings
+- The original parse failure in `check_config.ps1` was not a missing-config problem. It was a Windows PowerShell compatibility problem across three layers: UTF-8 `.env.local` reading, regex-based parsing, and comma-separated `-RequiredKeys` arriving as a single string when invoked through `powershell -File`.
+- Replacing regex parsing with explicit split-at-first-`=` parsing made the `.env` reader stable.
+- Normalizing a single comma-separated `RequiredKeys` string fixed the false "all keys missing" result when the script is called from the command line.
+- `tools/validate/required_keys.txt` was stale for this repo and was updated to `OPENAI_BASE_URL`, `CHAT_API_KEY`, `FASTGPT_PORT`, and `MINIO_PORT`.
+- `tools/validate/run_all.ps1` now defaults to `infra/fastgpt/.env.local`, which matches this repository's real config location.
+- `scripts/rebuild-venv.ps1` was added and verified successfully against both a temporary test venv and the real `.venv`.
+- Rebuilding the real `.venv` completed successfully, and `.\.venv\Scripts\python.exe` now imports `openpyxl` and `docx` correctly.
+- The rebuilt `pyvenv.cfg` still points to the Python Store launcher path under `AppData\Local\Microsoft\WindowsApps`, but that path now exists on this machine and the venv is working normally.
+- Both delegated workers failed before execution with upstream model `503` responses, so the main agent completed both repairs locally.

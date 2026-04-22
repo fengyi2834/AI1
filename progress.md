@@ -61,3 +61,55 @@
   - 对话流程设计
   - 渠道接入建议
   - 最小可行版本实施清单
+## 2026-04-22
+
+### Startup Audit
+- Confirmed the Docker-based FastGPT stack is already running from this repo and can also be brought up again with `scripts/start-local.ps1`.
+- Verified the main app responds with HTTP 200 on `http://127.0.0.1:3100`.
+- Verified the MinIO console responds with HTTP 200 on `http://127.0.0.1:9101`.
+- Confirmed the reported `unhealthy` status for `fastgpt-code-sandbox` and `opensandbox-server` comes from a broken `curl` health check, not from a startup failure.
+- Confirmed `tools/validate/check_raw_docs.ps1` and `tools/validate/check_import_outputs.ps1` work when launched with `-ExecutionPolicy Bypass`.
+- Rebuilt `scripts/demo-server.ps1` so the demo server can parse and start again.
+- Replaced `scripts/start-demo.ps1` with a foreground starter so demo startup is stable and visible from the terminal.
+- Verified the demo wrapper by launching it in a child process on port `8104` and receiving HTTP 200.
+
+### Remaining Risks
+- The copied `.venv` is not usable on this machine because the embedded Python launcher points to a missing base interpreter.
+- `tools/validate/check_config.ps1` still cannot parse `infra/fastgpt/.env.local` and needs a separate fix before it can be trusted.
+
+## 2026-04-22
+
+### Validation Repair
+- Fixed `tools/validate/check_config.ps1` so it can correctly read and validate `infra/fastgpt/.env.local`.
+- Updated `tools/validate/required_keys.txt` to match the actual FastGPT local stack used in this repo.
+- Updated `tools/validate/run_all.ps1` so the default config path now points to `infra/fastgpt/.env.local`.
+- Added `scripts/rebuild-venv.ps1` to rebuild `.venv`, upgrade `pip`, install `tools/knowledge_ingest/requirements.txt`, and verify core imports.
+- Rebuilt the real `.venv` and confirmed `.\.venv\Scripts\python.exe` works with `openpyxl` and `python-docx`.
+
+### Verification
+- `powershell -ExecutionPolicy Bypass -File .\tools\validate\check_config.ps1 -ConfigPath .\infra\fastgpt\.env.local -RequiredKeys OPENAI_BASE_URL,CHAT_API_KEY,FASTGPT_PORT,MINIO_PORT`
+- `powershell -ExecutionPolicy Bypass -File .\tools\validate\check_config.ps1 -ConfigPath .\missing.env`
+- `powershell -ExecutionPolicy Bypass -File .\tools\validate\run_all.ps1`
+- `powershell -ExecutionPolicy Bypass -File .\scripts\rebuild-venv.ps1`
+- `.\.venv\Scripts\python.exe -c "import openpyxl, docx; print('MAIN_VENV_OK')"`
+
+### Notes
+- Two delegated workers were attempted, but both failed before execution due upstream model `503` availability errors. The main agent completed the repairs locally instead.
+
+## 2026-04-22
+
+### Repo Cleanup
+- Appended a `Current Verified Commands` section to `README.md` so the repo now documents the validated startup, demo, venv rebuild, and validation commands.
+- Moved root-level `tmp_*` investigation files into `tmp/root-archive-2026-04-22/` instead of deleting them.
+
+### Verification
+- Confirmed `README.md` contains the new command section.
+- Confirmed the repository root no longer contains any `tmp_*` files.
+
+## 2026-04-22
+
+### Demo Polish
+- Reworked the demo page presentation so the visible structure is closer to a customer-facing reception page instead of a raw technical demo.
+- Updated the frontend chat rendering to soften broken or overly technical fallback responses into more presentation-friendly Chinese copy.
+- Updated the demo server fallback flow so it prefers valid FAQ CSV data and ignores obviously corrupted imported JSON samples.
+- Confirmed `http://127.0.0.1:8099` is reachable again after restarting the demo server.

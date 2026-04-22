@@ -7,17 +7,35 @@ param(
     [string[]]$RequiredKeys = @()
 )
 
+function Read-EnvLines {
+    param([string]$Path)
+
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    try {
+        return [System.IO.File]::ReadAllLines((Resolve-Path -LiteralPath $Path), $utf8NoBom)
+    } catch {
+        return Get-Content -LiteralPath $Path -ErrorAction Stop
+    }
+}
+
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 if ([string]::IsNullOrWhiteSpace($RequiredKeysPath)) {
     $RequiredKeysPath = Join-Path -Path $scriptRoot -ChildPath "required_keys.txt"
 }
 
 if (-not (Test-Path -LiteralPath $ConfigPath)) {
-    $fallback = ".\\config\\.env"
-    if (Test-Path -LiteralPath $fallback) {
-        $ConfigPath = $fallback
-        Write-Output ("ConfigPath not found, using fallback: {0}" -f $ConfigPath)
-    } else {
+    $fallbacks = @(
+        ".\\infra\\fastgpt\\.env.local",
+        ".\\config\\.env"
+    )
+    foreach ($fallback in $fallbacks) {
+        if (Test-Path -LiteralPath $fallback) {
+            $ConfigPath = $fallback
+            Write-Output ("ConfigPath not found, using fallback: {0}" -f $ConfigPath)
+            break
+        }
+    }
+    if (-not (Test-Path -LiteralPath $ConfigPath)) {
         Write-Error "Config file not found: $ConfigPath"
         exit 2
     }
@@ -31,24 +49,32 @@ if ($RequiredKeys.Count -eq 0) {
     }
 }
 
+if ($RequiredKeys.Count -eq 1 -and $RequiredKeys[0] -match ",") {
+    $RequiredKeys = $RequiredKeys[0].Split(",") | ForEach-Object { $_.Trim() } | Where-Object {
+        -not [string]::IsNullOrWhiteSpace($_)
+    }
+}
+
 if ($RequiredKeys.Count -eq 0) {
     Write-Error "No required keys provided. Pass -RequiredKeys or populate required_keys.txt."
     exit 2
 }
 
-$lines = Get-Content -LiteralPath $ConfigPath -ErrorAction SilentlyContinue
+$lines = Read-EnvLines -Path $ConfigPath
 $kv = @{}
 foreach ($line in $lines) {
-    $trim = $line.Trim()
+    $trim = $line.Trim().Trim([char]0xFEFF)
     if ($trim.StartsWith("#") -or $trim.StartsWith(";") -or $trim -eq "") { continue }
-    $match = [Regex]::Match($trim, "^(?<key>[A-Za-z0-9_.-]+)\\s*=\\s*(?<val>.*)$")
-    if ($match.Success) {
-        $key = $match.Groups["key"].Value
-        $val = $match.Groups["val"].Value.Trim()
-        if ($val.StartsWith('"') -and $val.EndsWith('"')) {
-            $val = $val.Trim('"')
+    $separatorIndex = $trim.IndexOf("=")
+    if ($separatorIndex -gt 0) {
+        $key = $trim.Substring(0, $separatorIndex).Trim().Trim([char]0xFEFF)
+        $val = $trim.Substring($separatorIndex + 1).Trim()
+        if ($key) {
+            if ($val.StartsWith('"') -and $val.EndsWith('"')) {
+                $val = $val.Trim('"')
+            }
+            $kv[$key] = $val
         }
-        $kv[$key] = $val
     }
 }
 

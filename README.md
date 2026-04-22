@@ -11,6 +11,17 @@
 5. 提供一个官网客服接入 Demo
 6. 提供基础校验脚本，方便反复调试
 
+## 当前联调提醒
+
+<div style="border:2px solid #d92d20;padding:12px 14px;border-radius:10px;background:#fff1f0;color:#a61b1b;">
+  <strong>当前默认按“模拟数据联调”处理。</strong><br/>
+  你可以先使用 <code>data/raw_docs</code> 里的 smoke / smoke2 示例资料跑通流程。<br/>
+  但只要你准备接真实智谱模型，就必须去改 <code>infra/fastgpt/.env.local</code> 里的
+  <code>CHAT_API_KEY</code>。如果它还是
+  <code>__REPLACE_WITH_REAL_ZHIPU_API_KEY_BEFORE_REAL_RUN__</code>，
+  就说明真实模型还没有接上。
+</div>
+
 ## 目录约定
 
 - `infra/fastgpt/`
@@ -41,3 +52,48 @@
 - 项目文档已初步完成
 - 代码脚手架正在搭建中
 - 当前目录尚未初始化为 Git 仓库
+## Current Verified Commands
+
+### Start FastGPT local stack
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-local.ps1
+```
+
+Main entry:
+
+- FastGPT: `http://127.0.0.1:3100`
+- MinIO Console: `http://127.0.0.1:9101`
+
+### Start demo server
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-demo.ps1 -Port 8099
+```
+
+Demo entry:
+
+- Demo: `http://127.0.0.1:8099`
+
+### Rebuild Python venv after copy or move
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\rebuild-venv.ps1
+```
+
+What it does:
+
+- Rebuilds `.venv`
+- Upgrades `pip`
+- Installs `tools\knowledge_ingest\requirements.txt`
+- Verifies `openpyxl` and `python-docx`
+
+### Run validation scripts
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\validate\run_all.ps1
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\validate\check_config.ps1 -ConfigPath .\infra\fastgpt\.env.local -RequiredKeys OPENAI_BASE_URL,CHAT_API_KEY,FASTGPT_PORT,MINIO_PORT
+```

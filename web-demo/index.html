@@ -1,100 +1,120 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI 客服 Demo</title>
+    <title>官网在线咨询</title>
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
     <main class="shell">
       <section class="hero">
-        <p class="eyebrow">广西亿库光养硅藻环保科技有限公司</p>
-        <h1>官网 AI 客服接入演示</h1>
-        <p class="lead">
-          最小可用版只需要一个嵌入页、留资表单和转人工入口，依托
-          FastGPT + 智谱 GLM-5.1 即可快速降低人工成本。
-        </p>
-      </section>
-
-      <section class="panel">
-        <header>
-          <h2>嵌入式客服模拟器</h2>
-          <p>模拟官网悬浮客服反馈链路，支持文字输入与智能预热提示。</p>
-        </header>
-        <div class="chat">
-          <div id="chatLog" class="chat-log"></div>
-          <form id="chatForm" class="chat-form">
-            <input
-              id="chatInput"
-              type="text"
-              placeholder="请输入你的问题，例如：最近有什么促销？"
-              autocomplete="off"
-              required
-            />
-            <button type="submit">发送</button>
-          </form>
-        </div>
-      </section>
-
-      <section class="panel">
-        <header>
-          <h2>留资表单</h2>
-          <p>必要时由 AI 推动并收集客户联系方式与项目意向。</p>
-        </header>
-        <form id="leadForm" class="stack">
-          <label>
-            <span>姓名</span>
-            <input type="text" name="name" placeholder="李先生/小姐" required />
-          </label>
-          <label>
-            <span>联系方式</span>
-            <input
-              type="text"
-              name="contact"
-              placeholder="手机号 / 微信号"
-              required
-            />
-          </label>
-          <label>
-            <span>关注产品</span>
-            <select name="product">
-              <option value="硅藻板">硅藻板解决方案</option>
-              <option value="光养">光养系统</option>
-              <option value="其他">其他</option>
-            </select>
-          </label>
-          <button type="submit" class="primary">提交留资</button>
-          <p class="hint">提交后会同步到后台 CRM/Lark 群，并推送到人工客服。</p>
-        </form>
-      </section>
-
-      <section class="panel">
-        <header>
-          <h2>转人工入口</h2>
-          <p>当智能判断无法完成或用户要求转人工时可立即触发。</p>
-        </header>
-        <div class="cta">
-          <p>
-            遇到高复杂度项目、敏感政策或报价需求时，请点击
-            <strong>“人工协助”</strong>，我会立刻记录并提示人工客服接入。
+        <div class="hero-copy">
+          <p class="eyebrow">广西亿库光养硅藻板</p>
+          <h1>在线咨询</h1>
+          <p class="lead">
+            这里保留了客户咨询时最常见的三个动作：先提问、再留资、必要时转接顾问。页面尽量保持普通客服接待的感觉。
           </p>
-          <button id="handoff" class="secondary">人工协助</button>
+          <div class="hero-points" aria-label="咨询亮点">
+            <span>产品问题可直接试问</span>
+            <span>咨询到留资流程保留</span>
+            <span>复杂问题可转接顾问</span>
+          </div>
         </div>
+
+        <aside class="hero-side">
+          <div class="hero-info">
+            <button type="button" class="info-trigger" aria-label="查看服务说明">i</button>
+            <div class="info-tooltip" role="note">
+              <strong>服务说明</strong>
+              <p>当前页面用于演示官网咨询接待流程，包含在线咨询、留资和转接顾问三个阶段。</p>
+              <p>现场展示时建议先问产品适用场景、除味能力，再问施工和方案，这样更容易看出完整接待表现。</p>
+            </div>
+          </div>
+        </aside>
       </section>
 
-      <section class="panel instructions">
-        <header>
-          <h2>接入说明</h2>
-        </header>
-        <ul>
-          <li>接口假定部署在 `/api/ai/chat`，接受 `{ question, history }`。</li>
-          <li>FastGPT 负责对接 GLM-5.1/Embedding-3，moderation + GLM-4-Flash 质检。</li>
-          <li>留资表单可 POST 到 `/api/ai/lead`，包含 `name`、`contact`、`product`。</li>
-          <li>人工转人工入口调用 `/api/ai/handoff`，返回 `status: "queued"` 为准。</li>
-          <li>所有请求按 JSON 交互，响应结构为 `{ answer: string, sessionId?: string }`。</li>
-          <li>若页面部署在静态 CDN，只需合并 `css/style.css` 与 `js/app.js`。</li>
-        </ul>
+      <section class="layout">
+        <section class="panel chat-panel" aria-labelledby="chatTitle">
+          <header class="panel-head">
+            <div>
+              <p class="section-kicker">在线咨询</p>
+              <h2 id="chatTitle">先让客户问一个真实问题</h2>
+              <p>建议从“适不适合新房”“能解决什么问题”“适合什么空间”这类问题开始，更容易看出接待效果。</p>
+            </div>
+          </header>
+
+          <div class="quick-actions" aria-label="快捷问题">
+            <button type="button" class="quick-question">介绍一下这个产品</button>
+            <button type="button" class="quick-question">这个材料适合新房吗？</button>
+            <button type="button" class="quick-question">会不会帮助除味除醛？</button>
+            <button type="button" class="quick-question">如果是门店合作，怎么选方案？</button>
+          </div>
+
+          <div class="chat">
+            <div id="chatLog" class="chat-log" aria-live="polite"></div>
+            <form id="chatForm" class="chat-form">
+              <label class="sr-only" for="chatInput">输入咨询问题</label>
+              <input
+                id="chatInput"
+                type="text"
+                placeholder="请输入你的问题，例如：这个材料适合新房吗？"
+                autocomplete="off"
+                required
+              />
+              <button type="submit">发送咨询</button>
+            </form>
+          </div>
+        </section>
+
+        <aside class="sidebar">
+          <section class="panel side-panel" aria-labelledby="leadTitle">
+            <header class="panel-head compact">
+              <div>
+                <p class="section-kicker">销售承接</p>
+                <h2 id="leadTitle">有意向，再留资</h2>
+                <p>表单只保留客户现场最容易接受的三个字段，演示时更干净，也更接近真实接待节奏。</p>
+              </div>
+            </header>
+            <form id="leadForm" class="stack">
+              <label>
+                <span>姓名</span>
+                <input type="text" name="name" placeholder="例如：李先生" required />
+              </label>
+              <label>
+                <span>联系方式</span>
+                <input type="text" name="contact" placeholder="手机号 / 微信号" required />
+              </label>
+              <label>
+                <span>关注方向</span>
+                <select name="product">
+                  <option value="硅藻板">硅藻板解决方案</option>
+                  <option value="光养">光养系统</option>
+                  <option value="其他">其他合作需求</option>
+                </select>
+              </label>
+              <button type="submit" class="primary">提交留资</button>
+              <p class="hint">当前为本地演示环境，提交后只展示接待结果，不写入外部 CRM。</p>
+            </form>
+          </section>
+
+          <section class="panel side-panel handoff-panel" aria-labelledby="handoffTitle">
+            <header class="panel-head compact">
+              <div>
+                <p class="section-kicker">顾问接入</p>
+                <h2 id="handoffTitle">复杂问题再转接顾问</h2>
+                <p>当客户问到报价、施工细节、定制方案或明确要求进一步沟通时，再转接顾问，更符合真实业务流程。</p>
+              </div>
+            </header>
+            <div class="cta">
+              <div class="cta-note">
+                <strong>接待说明</strong>
+                <p>点击后会返回一个本地接待状态，用来展示从在线咨询到顾问跟进的衔接感。</p>
+              </div>
+              <button id="handoff" class="secondary" type="button">转接顾问</button>
+            </div>
+          </section>
+        </aside>
       </section>
     </main>
     <script src="js/app.js"></script>
