@@ -164,7 +164,7 @@ const sendChat = async (question) => {
   try {
     const response = await fetch(API_BASE, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json; charset=UTF-8" },
       body: JSON.stringify({ question, history: [] })
     });
 
@@ -199,7 +199,7 @@ leadForm.addEventListener("submit", async (event) => {
   try {
     await fetch(LEAD_API, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json; charset=UTF-8" },
       body: JSON.stringify(data)
     });
     alert("信息已提交，顾问会根据当前咨询情况继续跟进。");
@@ -214,7 +214,7 @@ handoff.addEventListener("click", async () => {
   try {
     const response = await fetch(HANDOFF_API, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json; charset=UTF-8" },
       body: JSON.stringify({ reason: "用户请求人工协助" })
     });
     const payload = await response.json();
