@@ -3,11 +3,12 @@
     [string]$WebRoot = ".\web-demo",
     [string]$EnvFile = ".\infra\fastgpt\.env.local",
     [string]$KnowledgeDir = ".\data\import_ready",
-    [string]$FaqCsv = "",
+    [string]$FaqCsv = ".\data\faq\gx_yiku_fastgpt_faq_curated.csv",
     [string]$PromptTemplate = ".\config\fastgpt\prompts\demo_live_system_prompt.md"
 )
 
 $ErrorActionPreference = "Stop"
+$script:FastGptAnswerCache = @{}
 
 function Get-EnvMap {
     param([string]$Path)
@@ -44,6 +45,46 @@ function Get-TextFileContent {
     }
 
     return Get-Content -LiteralPath $Path -Raw -Encoding UTF8
+}
+
+function Get-FastGptCacheKey {
+    param([string]$Question)
+
+    if (-not $Question) {
+        return ""
+    }
+
+    $normalized = (($Question | Out-String).Trim()).ToLowerInvariant() -replace "[\s\p{P}\p{S}]+", ""
+    return $normalized
+}
+
+function Get-CachedFastGptAnswer {
+    param([string]$Question)
+
+    $key = Get-FastGptCacheKey -Question $Question
+    if (-not $key) {
+        return $null
+    }
+
+    if ($script:FastGptAnswerCache.ContainsKey($key)) {
+        return $script:FastGptAnswerCache[$key]
+    }
+
+    return $null
+}
+
+function Set-CachedFastGptAnswer {
+    param(
+        [string]$Question,
+        [string]$Answer
+    )
+
+    $key = Get-FastGptCacheKey -Question $Question
+    if (-not $key -or -not $Answer) {
+        return
+    }
+
+    $script:FastGptAnswerCache[$key] = $Answer.Trim()
 }
 
 function Test-IsChineseText {
@@ -260,12 +301,24 @@ function Get-BestFaqAnswer {
         return $null
     }
 
+    $normalizedQuestion = (($Question | Out-String).Trim()) -replace "[\s\p{P}\p{S}]+", ""
+    if ($normalizedQuestion) {
+        foreach ($entry in $FaqEntries) {
+            $entryQuestion = (($entry.question | Out-String).Trim()) -replace "[\s\p{P}\p{S}]+", ""
+            if ($entryQuestion -and $entryQuestion -eq $normalizedQuestion) {
+                return $entry.answer
+            }
+        }
+    }
+
     $best = $null
     $bestScore = 0
 
     foreach ($entry in $FaqEntries) {
-        $candidate = (($entry.question | Out-String).Trim() + " " + ($entry.answer | Out-String).Trim()).Trim()
-        $score = Get-TextMatchScore -Question $Question -Candidate $candidate
+        $questionText = (($entry.question | Out-String).Trim())
+        $answerText = (($entry.answer | Out-String).Trim())
+        $score = (Get-TextMatchScore -Question $Question -Candidate $questionText) * 3
+        $score += Get-TextMatchScore -Question $Question -Candidate $answerText
 
         if ($score -gt $bestScore) {
             $bestScore = $score
@@ -557,6 +610,22 @@ function Get-DemoChatMode {
     }
 }
 
+function Get-ChatBackendMode {
+    param([hashtable]$EnvMap)
+
+    $rawMode = ""
+    if ($EnvMap.ContainsKey("CHAT_BACKEND")) {
+        $rawMode = (($EnvMap["CHAT_BACKEND"] | Out-String).Trim()).ToLowerInvariant()
+    }
+
+    switch ($rawMode) {
+        "fastgpt" { return "fastgpt" }
+        "fastgpt_prefer" { return "fastgpt_prefer" }
+        "direct" { return "direct" }
+        default { return "direct" }
+    }
+}
+
 function Test-GuidedAnswerEnabled {
     param([hashtable]$EnvMap)
 
@@ -573,6 +642,101 @@ function Test-GuidedAnswerEnabled {
     }
 }
 
+function Test-IsWeakFastGPTAnswer {
+    param(
+        [string]$Question,
+        [string]$Answer
+    )
+
+    if (-not $Answer) {
+        return $true
+    }
+
+    $trimmed = $Answer.Trim()
+    if (-not $trimmed) {
+        return $true
+    }
+
+    if ($trimmed -match "How can I help you today|Feel free to ask anything|I can help") {
+        return $true
+    }
+
+    if ($trimmed -match "抱歉.*没有检索到" -or
+        $trimmed -match "目前没有检索到" -or
+        $trimmed -match "暂无相关信息" -or
+        $trimmed -match "无法为您确认" -or
+        $trimmed -match "^您好.*暂无" -or
+        $trimmed -match "请问您是想了解" -or
+        $trimmed -match "请问您是用于" -or
+        $trimmed -match "请问您指的是哪种产品" -or
+        $trimmed -match "请问您需要了解的是哪个") {
+        return $true
+    }
+
+    if ($trimmed -match "未找到明确依据" -or $trimmed -match "当前知识库没有足够依据") {
+        return $false
+    }
+
+    if ($Question -and (Test-AnswerNeedsGuidance -Question $Question -Answer $trimmed) -and $trimmed -match "请问") {
+        return $true
+    }
+
+    return $false
+}
+
+function Invoke-FastGPTAppChat {
+    param(
+        [string]$Question,
+        [hashtable]$EnvMap
+    )
+
+    $apiUrl = ""
+    if ($EnvMap.ContainsKey("FASTGPT_APP_API_URL")) {
+        $apiUrl = (($EnvMap["FASTGPT_APP_API_URL"] | Out-String).Trim())
+    }
+    if (-not $apiUrl) {
+        $apiUrl = "http://127.0.0.1:3100/api/v1/chat/completions"
+    }
+
+    $apiKey = ""
+    if ($EnvMap.ContainsKey("FASTGPT_APP_API_KEY")) {
+        $apiKey = (($EnvMap["FASTGPT_APP_API_KEY"] | Out-String).Trim())
+    }
+    if (-not $apiKey) {
+        return $null
+    }
+
+    $payload = @{
+        chatId = "demo-" + [guid]::NewGuid().ToString("N").Substring(0, 12)
+        stream = $false
+        variables = @{}
+        messages = @(
+            @{
+                role = "user"
+                content = $Question
+            }
+        )
+    } | ConvertTo-Json -Depth 6
+
+    try {
+        $response = Invoke-RestMethod -Uri $apiUrl -Method Post -Headers @{
+            Authorization = "Bearer $apiKey"
+        } -ContentType "application/json; charset=utf-8" -Body ([System.Text.Encoding]::UTF8.GetBytes($payload)) -TimeoutSec 25
+
+        $answer = $response.choices[0].message.content
+        if (Test-IsWeakFastGPTAnswer -Question $Question -Answer $answer) {
+            return $null
+        }
+
+        return @{
+            answer = $answer
+            mode = "fastgpt_app"
+        }
+    } catch {
+        return $null
+    }
+}
+
 function Get-ChatAnswer {
     param(
         [string]$Question,
@@ -585,6 +749,8 @@ function Get-ChatAnswer {
     $mode = "fallback"
     $answer = $null
     $envMap = Get-EnvMap -Path $EnvFilePath
+    $chatBackendMode = Get-ChatBackendMode -EnvMap $envMap
+    $fastgptAttempted = $false
     $baseUrl = $envMap["OPENAI_BASE_URL"]
     $apiKey = $envMap["CHAT_API_KEY"]
     $relevantFacts = Get-RelevantFacts -Question $Question -FaqEntries $FaqEntries -KnowledgeRecords $KnowledgeRecords -MaxFacts 6
@@ -611,6 +777,7 @@ function Get-ChatAnswer {
     } else {
         $null
     }
+    $bestFaqAnswer = Get-BestFaqAnswer -Question $Question -FaqEntries $FaqEntries
     $chatMode = Get-DemoChatMode -EnvMap $envMap
 
     if ($businessGuardAnswer) {
@@ -638,6 +805,43 @@ function Get-ChatAnswer {
         return @{
             answer = $guidedAnswer
             mode = "guided_answer"
+        }
+    }
+
+    if ($chatBackendMode -in @("fastgpt", "fastgpt_prefer")) {
+        $cachedFastGptAnswer = Get-CachedFastGptAnswer -Question $Question
+        if ($cachedFastGptAnswer) {
+            return @{
+                answer = $cachedFastGptAnswer
+                mode = "fastgpt_cache"
+            }
+        }
+
+        $fastgptAttempted = $true
+        $fastgptAnswer = Invoke-FastGPTAppChat -Question $Question -EnvMap $envMap
+        if ($fastgptAnswer) {
+            Set-CachedFastGptAnswer -Question $Question -Answer $fastgptAnswer.answer
+            if ($bestFaqAnswer -and $fastgptAnswer.answer -match "请问您") {
+                return @{
+                    answer = $bestFaqAnswer
+                    mode = "faq_override"
+                }
+            }
+            return $fastgptAnswer
+        }
+
+        if ($bestFaqAnswer) {
+            return @{
+                answer = $bestFaqAnswer
+                mode = "faq_override"
+            }
+        }
+
+        if ($chatBackendMode -eq "fastgpt") {
+            return @{
+                answer = "我这边刚刚没从知识库应用里拿到稳定结果。您可以换一种更具体的问法，比如：适不适合新房、会不会有味道、公司在哪里，我再继续帮您确认。"
+                mode = "fastgpt_unavailable"
+            }
         }
     }
 
@@ -671,7 +875,7 @@ function Get-ChatAnswer {
             $candidate = $response.choices[0].message.content
             if ($candidate -and $candidate.Trim() -and -not (Test-IsLowQualityAnswer -Text $candidate)) {
                 $answer = $candidate
-                $mode = "live_model"
+                $mode = if ($fastgptAttempted) { "live_model_fallback" } else { "live_model" }
                 if ($guidedAnswer -and (Test-AnswerNeedsGuidance -Question $Question -Answer $answer)) {
                     $answer = $guidedAnswer
                     $mode = "guided_answer"
