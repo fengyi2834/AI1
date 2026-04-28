@@ -1,115 +1,109 @@
-# 进度日志
+# Progress
 
-## 2026-04-13
+## 2026-04-23
 
-### 已完成
-- 识别到用户目标是为广西亿库光养硅藻环保科技有限公司规划 AI 客服技术栈
-- 检查本地目录，确认已有 FAQ 数据文件
-- 验证 FAQ 文件可正常读取，确认约 47 条问答
-- 调研 FastGPT、Dify、OpenAI 模型与 Embedding 的官方资料
-- 建立本次工作的规划文件
-- 调研 ChatWiki 官方仓库定位与许可证
-- 调研智谱 GLM-5、Embedding、内容安全与 GLM-4-Flash 官方资料
-- 输出 FastGPT + 智谱 的部署清单
-- 输出 FastGPT + 智谱 的配置项表
-- 评估公司自用场景下的授权与商用风险
-- 根据用户确认，重写文档中的 Agent 规划口径
-- 明确区分“开发阶段多 Agent 提速”和“上线运行阶段少 Agent 提速”
-- 根据用户新情况，把项目起点改为“只有 xlsx/docx 原始文档，知识库需从零整理”
-- 补充“先本地 Docker 挂载跑通，再迁移服务器”的部署建议
-- 初始化 Git 仓库并补充项目骨架
-- 创建 `data/`、`docs/`、`README.md`、`.gitignore`
-- 实现 `tools/knowledge_ingest/` 原始资料整理工具
-- 实现 `tools/validate/` 基础校验脚本
-- 实现 `web-demo/` 官网客服接入 Demo
-- 实现 `infra/fastgpt/` 本地 Docker 脚手架与启动脚本
-- 实现 `config/fastgpt/` 配置模板并完成主进程集成收敛
-- 修复子代理返回的 2 个坏 JSON 模板
+- Confirmed that the website demo was not yet a strict real-RAG flow; it was still a scripted retrieval plus model-completion demo chain
+- Confirmed that a real local FastGPT app, dataset, and app key already exist
+- Repaired the FastGPT app orphan-edge problem
+- Added the `fastgpt_prefer` web-layer mode so the site tries the real FastGPT app first
+- Added the FAQ rebuild script `scripts/rebuild-fastgpt-faq.ps1`
+- Generated a cleaner FAQ file at `data/faq/gx_yiku_fastgpt_faq_clean.csv`
+- Continued work on rebuilding or replacing the `gx-yiku-faq` dataset into one-record-per-QA form
 
-### 当前进行中
-- 进行本地静态验证并整理交付说明
+## 2026-04-24
 
-### 关键判断
-- 当前最适合先做知识库型 AI 客服
-- 平台优先选 FastGPT
-- 模型要可替换，方便后续按成本和效果切换
-- 如果主战场是微信生态，ChatWiki 会比 FastGPT 更强
-- ChatWiki 的组织商用限制比 FastGPT 更严格
-- 智谱技术栈可行，推荐 `GLM-5 + Embedding-3 + moderation + GLM-4-Flash 质检`
-- 若使用智谱官方托管 API，通常按平台服务协议使用即可；“模型商用授权”更像开源模型下载/分发场景，需按具体方式区分
-- 开发阶段建议 `4 到 6 个 Agent` 并行推进
-- 上线运行阶段建议控制在 `1 个主 Agent + 2 个辅助节点`
-- 当前更真实的起点不是“已有 FAQ 知识库”，而是“原始文档待整理”
-- 当前本机缺少 `python` 启动器，Python 脚本还没法在本机做编译级验证
+- Created concise handoff docs for low-token restarts: `PROJECT_INDEX.md`, `CURRENT_STATE.md`, `DECISIONS.md`, and `NEXT_ACTION.md`
+- Moved older long-form docs into `docs/archive/`
+- Rewrote `README.md` and `docs/README.md` as navigation pages
+- Reviewed `C:\Users\Administrator\Desktop\资料\outputs\fastgpt_import` and identified QA quality issues in the generated FAQ
+- Updated `tools/fastgpt_kb/build_fastgpt_kb.py` to reduce topic/answer misalignment
+- Generated a final FastGPT import package in `C:\Users\Administrator\Desktop\资料\outputs\fastgpt_import\final_for_import`
+- Fixed UTF-8 breakage in the FastGPT maintenance scripts by switching Mongo script execution to `docker cp` plus in-container `mongosh`
+- Rebuilt the `gx-yiku-faq` dataset and confirmed Chinese FAQ rows are no longer stored as `?`
+- Added 6 high-frequency FAQ alias questions for new-house, odor, environment, and home-decoration user phrasings in `scripts/build_curated_faq.py`
+- Rebuilt the curated FAQ CSV to 67 rows and republished the FastGPT app workflow with broader FAQ retrieval settings
+- Strengthened `scripts/demo-server.ps1` so weak FastGPT answers now fall into `faq_override`
+- Verified stable website responses for:
+- `新房适合用吗？`
+- `硅藻板安装后可以尽快入住吗？味道大吗？`
+- `硅藻板环保吗？`
+- `硅藻板味道大吗？`
+- Added `scripts/import-fastgpt-doc-chunks.ps1` and imported 98 reviewed doc chunks into FastGPT collection `gx-yiku-doc-chunks-reviewed`
+- Switched imported doc-chunk `q` values from raw locator titles to semantic chunk text, which improved `searchTest` retrieval quality for non-FAQ product questions
+- Expanded curated FAQ aliases from 67 to 71 rows for patent/testing, `硅藻素板`, and `硅藻储能发光板` phrasing variants
+- Tightened `Get-BestFaqAnswer` in `scripts/demo-server.ps1` so exact question matches now beat loose overlap matches
+- Re-verified website responses for:
+- `产品有专利和检测报告吗？`
+- `硅藻素板可以用在哪些地方？`
+- `硅藻储能发光板一般用在什么地方？`
+- Confirmed that FastGPT `searchTest` is materially better after doc import, but direct app chat still remains inconsistent because retrieved knowledge is not being injected into the final generation prompt reliably enough
 
-### 本轮验证
-- `scripts/prepare-data-dirs.ps1` 可执行
-- `tools/validate/check_raw_docs.ps1` 可执行
-- `tools/validate/check_import_outputs.ps1` 可执行
-- `config/fastgpt` 关键 JSON 模板已完成语法修复
+## 2026-04-27
 
-### 错误与处理
-- 问题：当前环境找不到 `python`
-  - 处理：改用 PowerShell 和 JSON 静态校验继续推进，其余验证留待安装 Python 后执行
-- 问题：子代理返回的 2 个 JSON 模板语法错误
-  - 处理：主进程直接重写为可解析版本
-
-### 待办
-- 形成用户可直接使用的技术栈规划文档
-- 后续如用户继续推进，可补充：
-  - 知识库目录设计
-  - 对话流程设计
-  - 渠道接入建议
-  - 最小可行版本实施清单
-## 2026-04-22
-
-### Startup Audit
-- Confirmed the Docker-based FastGPT stack is already running from this repo and can also be brought up again with `scripts/start-local.ps1`.
-- Verified the main app responds with HTTP 200 on `http://127.0.0.1:3100`.
-- Verified the MinIO console responds with HTTP 200 on `http://127.0.0.1:9101`.
-- Confirmed the reported `unhealthy` status for `fastgpt-code-sandbox` and `opensandbox-server` comes from a broken `curl` health check, not from a startup failure.
-- Confirmed `tools/validate/check_raw_docs.ps1` and `tools/validate/check_import_outputs.ps1` work when launched with `-ExecutionPolicy Bypass`.
-- Rebuilt `scripts/demo-server.ps1` so the demo server can parse and start again.
-- Replaced `scripts/start-demo.ps1` with a foreground starter so demo startup is stable and visible from the terminal.
-- Verified the demo wrapper by launching it in a child process on port `8104` and receiving HTTP 200.
-
-### Remaining Risks
-- The copied `.venv` is not usable on this machine because the embedded Python launcher points to a missing base interpreter.
-- `tools/validate/check_config.ps1` still cannot parse `infra/fastgpt/.env.local` and needs a separate fix before it can be trusted.
-
-## 2026-04-22
-
-### Validation Repair
-- Fixed `tools/validate/check_config.ps1` so it can correctly read and validate `infra/fastgpt/.env.local`.
-- Updated `tools/validate/required_keys.txt` to match the actual FastGPT local stack used in this repo.
-- Updated `tools/validate/run_all.ps1` so the default config path now points to `infra/fastgpt/.env.local`.
-- Added `scripts/rebuild-venv.ps1` to rebuild `.venv`, upgrade `pip`, install `tools/knowledge_ingest/requirements.txt`, and verify core imports.
-- Rebuilt the real `.venv` and confirmed `.\.venv\Scripts\python.exe` works with `openpyxl` and `python-docx`.
-
-### Verification
-- `powershell -ExecutionPolicy Bypass -File .\tools\validate\check_config.ps1 -ConfigPath .\infra\fastgpt\.env.local -RequiredKeys OPENAI_BASE_URL,CHAT_API_KEY,FASTGPT_PORT,MINIO_PORT`
-- `powershell -ExecutionPolicy Bypass -File .\tools\validate\check_config.ps1 -ConfigPath .\missing.env`
-- `powershell -ExecutionPolicy Bypass -File .\tools\validate\run_all.ps1`
-- `powershell -ExecutionPolicy Bypass -File .\scripts\rebuild-venv.ps1`
-- `.\.venv\Scripts\python.exe -c "import openpyxl, docx; print('MAIN_VENV_OK')"`
-
-### Notes
-- Two delegated workers were attempted, but both failed before execution due upstream model `503` availability errors. The main agent completed the repairs locally instead.
-
-## 2026-04-22
-
-### Repo Cleanup
-- Appended a `Current Verified Commands` section to `README.md` so the repo now documents the validated startup, demo, venv rebuild, and validation commands.
-- Moved root-level `tmp_*` investigation files into `tmp/root-archive-2026-04-22/` instead of deleting them.
-
-### Verification
-- Confirmed `README.md` contains the new command section.
-- Confirmed the repository root no longer contains any `tmp_*` files.
-
-## 2026-04-22
-
-### Demo Polish
-- Reworked the demo page presentation so the visible structure is closer to a customer-facing reception page instead of a raw technical demo.
-- Updated the frontend chat rendering to soften broken or overly technical fallback responses into more presentation-friendly Chinese copy.
-- Updated the demo server fallback flow so it prefers valid FAQ CSV data and ignores obviously corrupted imported JSON samples.
-- Confirmed `http://127.0.0.1:8099` is reachable again after restarting the demo server.
+- Read the project handoff files and planning notes before startup to recover the current FastGPT and website state
+- Confirmed Docker Desktop was installed but the `com.docker.service` service was stopped at the start of this session
+- Started `com.docker.service`, reran `scripts/start-local.ps1`, and verified the FastGPT compose stack came up successfully
+- Started `scripts/start-demo.ps1` in the background and confirmed the demo server is listening on `http://127.0.0.1:8099/`
+- Verified both `http://127.0.0.1:3100/` and `http://127.0.0.1:8099/` return HTTP 200
+- Re-tested demo chat behavior:
+- `你好` -> `clarify`
+- `新房适合用吗？` -> `faq_override`
+- `产品有专利和检测报告吗？` -> `faq_override`
+- Re-tested the real FastGPT app endpoint directly and confirmed it still returns an empty `message.content`
+- Timed demo requests and observed that fallback answers are still slow because the site waits on the weak FastGPT path first
+- Inspected FastGPT `llm_request_records` and `chat_item_responses` and confirmed the dataset search node was returning `quoteList`, but the chat node prompt still did not contain retrieved knowledge
+- Found the broken workflow details: missing effective quote injection, stale runtime config until app restart, and `glm-5` producing reasoning-heavy outputs with empty `answerText`
+- Rebuilt the FastGPT chat node config in `scripts/tune-fastgpt-rag-app.ps1` to:
+- keep the fixed `quoteQA` reference shape
+- inject retrieved knowledge through `quoteTemplate` and `quotePrompt`
+- switch the answer model to `glm-4-flash-250414`
+- shrink prompt and token budget for a lighter FAQ-style RAG path
+- Restarted `fastgpt-app` so the published app actually loaded the new workflow config
+- Re-verified the direct FastGPT app path and confirmed it now returns real answers for:
+- `新房适合用吗？`
+- `产品有专利和检测报告吗？`
+- `硅藻素板可以用在哪些地方？`
+- Tightened `Invoke-FastGPTAppChat` timeout in `scripts/demo-server.ps1` from 45s to 25s to reduce worst-case waits
+- Added a successful-answer cache in `scripts/demo-server.ps1` so repeat questions can return `fastgpt_cache` instead of re-hitting the upstream model every time
+- Re-tested the demo path and confirmed:
+- first hit can now return `fastgpt_app`
+- repeat hit on the same question can return `fastgpt_cache` in under 1 second
+- Identified the main remaining runtime risk as upstream model rate limiting (`429 该模型当前访问量过大，请您稍后再试`) rather than broken local RAG wiring
+- Converted `客户最常问的10-50问题及标准回答.docx` into `data/faq/customer_top_10_50_docx.csv` with 31 FAQ rows using the new script `scripts/build_docx_faq_csv.py`
+- Added `scripts/import-fastgpt-faq-csv.ps1` to import FAQ CSV rows into a dedicated FastGPT collection without overwriting the existing main FAQ or doc-chunk collections
+- Imported the new FAQ CSV into FastGPT collection `gx-yiku-customer-top-10-50-docx`
+- Verified the new DOCX-backed knowledge through direct FastGPT chat:
+- `亿库硅藻板防霉等级是多少？` -> `0级`
+- `硅藻板对宠物友好吗？` -> returned the expected pet-friendly answer
+- Read `KNOWLEDGE_BASE_TASK_PROMPT.md` and confirmed it matches the desired next workflow: inspect `C:\Users\Administrator\Desktop\资料` first, then classify by FAQ / doc chunk / exclude / needs review before any import work
+- Recovered the active workspace context from `task_plan.md`, `findings.md`, and `progress.md` so the knowledge-base curation task can continue in the current conversation instead of starting from zero
+- Enumerated the top-level source set under `C:\Users\Administrator\Desktop\资料` and identified `客户跟踪表-伍国涛2026.4.22.xls` as an immediate exclude candidate for the public customer-service knowledge base
+- Recursively audited `资料\\1` and `资料\\亿库公司资料(3)` and separated likely public product materials from internal training, contract, pricing, customer-tracking, and sales-process files
+- Verified the two FAQ DOCX files are duplicates by file hash, then used the top-level copy as the single primary FAQ source
+- Re-ran reusable extraction/build steps with the project `.venv`: DOCX FAQ extraction produced 31 rows, and the public PDF/PPT candidate set produced a 118-row doc-chunk package plus a 11-row review-only FAQ candidate list
+- Assembled a refreshed reviewed package under `C:\Users\Administrator\Desktop\资料\outputs\fastgpt_import\final_for_import` with:
+- `faq.csv` containing 20 stable public FAQ rows
+- `faq_with_sources.csv` containing 31 audited rows split into 20 `keep`, 10 `needs_review`, and 1 `exclude`
+- `doc_chunks.csv`, `product_knowledge.md`, `review_notes.md`, and `excluded_files.md`
+- Marked `河南青丰.pdf` as `needs_review` because the current extraction returned only empty pages
+- Attempted to parallelize FAQ triage and exclusion-note drafting with sub-agents after classification rules were established, but both agents failed upstream with transient `503 Service Unavailable`; the main thread completed the work locally
+- Reworked `scripts/build_curated_faq.py` into a batch-oriented FAQ humanization generator instead of a one-off append script
+- Added a second-pass refinement across the full 71-row FAQ set, grouped by company basics, core capabilities, user experience, application scenarios, and credential/commercial questions
+- Rebuilt `data/faq/gx_yiku_fastgpt_faq_curated.csv` after the second-pass refinement and verified that representative rows now read more like a real sales consultant than a standard support script
+- Re-imported the refreshed 71-row curated FAQ set into FastGPT collection `gx_yiku_fastgpt_faq_curated`
+- Tightened `scripts/demo-server.ps1` output cleanup again so repeated transfer-to-human phrases and awkward generated wording are normalized before website responses are returned
+- Re-tested representative website questions after the FAQ republish:
+- `广西亿库光养硅藻环保科技有限公司是做什么的？`
+- `硅藻板有哪些核心功能？`
+- `硅藻板适合海边和海洋装备吗？`
+- `硅藻板对老人和小孩友好吗？`
+- `广西亿库的产品有没有专利和检测依据？`
+- Built `data/faq/customer_top_10_50_docx_keep.csv` from audited `faq_with_sources.csv`, keeping only the 20 `keep` FAQ rows and excluding raw `needs_review` / `exclude` entries
+- Added `scripts/filter_doc_chunks_risk.py` and split public document chunks into `data/import_ready/doc_chunks_safe.csv` (82 rows) and `data/import_ready/doc_chunks_needs_review.csv` (36 rows)
+- Replaced FastGPT collection `gx-yiku-customer-top-10-50-docx` with the 20-row audited keep FAQ set
+- Replaced FastGPT collection `gx-yiku-doc-chunks-reviewed` with the 82-row safe document-chunk set
+- Extended `scripts/build_curated_faq.py` to merge the audited keep FAQ set and rebuilt `data/faq/gx_yiku_fastgpt_faq_curated.csv` to 91 rows
+- Re-imported FastGPT collection `gx_yiku_fastgpt_faq_curated` with the refreshed 91-row main FAQ set
+- Deleted the stale file-backed collection `guangxi-yiku-faq.csv` so old coarse FAQ chunks no longer pollute retrieval
+- Checked `河南青丰.pdf` directly with PyMuPDF after copying to an ASCII path; both pages are image-only with zero extractable text, and no OCR engine is installed locally, so it remains `needs_review`
+- Direct FastGPT app verification showed the cleaned knowledge base is now smaller and safer, but the generation layer can still infer beyond evidence on some questions, so prompt/business-guard tightening is still needed

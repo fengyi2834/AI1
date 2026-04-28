@@ -1,254 +1,122 @@
-# AI客服项目调研结论
+# Findings
 
-## 一、业务侧现状
-- 当前项目目录中存在 `广西亿库光养硅藻板知识库FAQ.csv`
-- 该 CSV 已确认可正常以 UTF-8 读取
-- 数据规模约 47 条 FAQ，字段为 `question`、`answer`
-- 已抽样确认内容覆盖：
-  - 公司介绍
-  - 成立时间、注册资金、地址
-  - 企业定位
-  - 核心产品说明
-  - 产品功能说明
+## FastGPT Current State
 
-结论：
-- 现有数据更适合先做“知识库问答型客服”
-- 第一阶段可直接服务官网访客、微信咨询和销售前置问答
-- 还不适合直接做复杂售后工单流转或强业务决策 Agent
+- A local FastGPT app already exists: `Guangxi Yiku AI Customer Service`
+- App ID: `s69e0562ea67193262b8de666`
+- App OpenAPI key exists: `fgtest-001`
+- Current real endpoint: `http://127.0.0.1:3100/api/v1/chat/completions`
 
-## 二、平台候选调研
+## Dataset State
 
-### 1. FastGPT
-结论摘要：
-- FastGPT 官方文档说明其定位是基于大语言模型的知识库问答系统，并结合可视化工作流
-- 支持标准 API 接入，支持多种主流模型，适合知识库客服快速搭建
-- 对现有 FAQ、文档、PDF 等知识资料较友好
+- The app references dataset ID `s69e03880d9b607f9459582d6`
+- Dataset name: `gx-yiku-faq`
+- The dataset exists and is not empty
+- Current `dataset_datas` granularity is weak because many FAQ items were stored as large Markdown-table blocks
+- Current `dataset_data_texts` content is too coarse for stable FAQ retrieval
 
-适合本项目的原因：
-- 中文生态更友好
-- 知识库问答是它的强项
-- 可视化工作流适合后续把“问答 + 留资 + 人工转接”串起来
-- 对中小企业来说，上线速度快，维护成本较低
+## Web Layer State
 
-参考来源：
-- https://doc.fastgpt.cn/
-- https://doc.fastgpt.cn/en/docs/introduction
+- `web-demo/js/app.js` sends requests to `/api/ai/chat`
+- `scripts/demo-server.ps1` owns the actual chat routing logic
+- The web layer already supports `CHAT_BACKEND=fastgpt_prefer`
+- Current intended behavior is: try the real FastGPT app first, then fall back to the direct model path only if FastGPT fails
 
-### 2. Dify
-结论摘要：
-- Dify 官方文档显示它是一个开源 AI 工作流平台，支持工作流、Chatflow、知识库、API 和 Web 发布
-- 它更偏“通用 AI 应用平台”，适合后续扩展复杂工作流
+## Verified Behavior
 
-适合本项目的程度：
-- 能做，但第一阶段未必比 FastGPT 更省心
-- 如果后续要做更多内部 AI 应用，Dify 也值得保留为备选
+- Low-intent greeting questions are clarified first instead of immediately dumping product details
+- The current question "is it suitable for a new house" can still return `live_model_fallback`
+- That proves the website is attempting the FastGPT app path, but FastGPT is still not stable enough
 
-参考来源：
-- https://docs.dify.ai/en/introduction
-- https://docs.dify.ai/en/use-dify/getting-started/key-concepts
-- https://docs.dify.ai/en/guides/knowledge-base/readme
-- https://docs.dify.ai/en/use-dify/publish/README
+## Documentation Structure Findings
 
-## 三、模型层调研
+- The token problem came from repeated context spread across `README.md`, planning notes, and long reference docs
+- A stable four-file startup path is now available for future sessions
+- Historical planning and checklist material was moved under `docs/archive/` so it stays available without being in the default read path
 
-### 1. OpenAI GPT-5 mini
-结论摘要：
-- OpenAI 当前文档将 GPT-5 mini 描述为适合低延迟、高并发、成本敏感场景
-- 对客服问答、结构化输出、工具调用都比较合适
+## FastGPT Import Findings
 
-参考来源：
-- https://developers.openai.com/api/docs/models/gpt-5-mini
-- https://developers.openai.com/api/docs/models
+- The latest external export bundle was under `C:\Users\Administrator\Desktop\资料\outputs\fastgpt_import`
+- The original FAQ outputs mixed page-level labels, trailing product names, and some cross-product answer contamination
+- The source slides/pages appear to use a trailing-topic layout in several places, so topic names often come after the feature/application text
+- After script refinement, the current final package contains 10 FAQ rows and 98 document chunks for import
+- The safest import path is to use FAQ plus document chunks together, and quickly review the `page=10~12` items before production use
 
-### 2. OpenAI GPT-4.1 mini
-结论摘要：
-- 价格更低，适合成本敏感场景
-- 也支持较长上下文和工具调用
-- 可作为更便宜的备用模型
+## 2026-04-24 RAG Stabilization Findings
 
-参考来源：
-- https://developers.openai.com/api/docs/models/gpt-4.1-mini
-- https://openai.com/index/gpt-4-1/
+- The earlier dataset rebuild path had a hidden encoding bug: piping UTF-8 Mongo scripts from PowerShell into `docker exec mongosh` turned Chinese FAQ content into `?` in `dataset_datas`
+- After changing those maintenance scripts to copy `.js` files into the container first, the same dataset rebuild preserved Chinese questions and answers correctly
+- FastGPT `searchTest` shows the current FAQ dataset can answer exact FAQ-style questions well with `fullTextRecall`, but natural-language paraphrases such as `新房适合用吗` still need either alias rows or a stronger semantic index
+- Published app behavior remains weaker than the local website fallback for several high-frequency sales questions, especially when the app answers with apology-style or follow-up-heavy text
+- The most practical website-side stabilization is to keep `fastgpt_prefer`, but classify weak FastGPT replies as non-production and replace them with local FAQ-backed answers using a distinct `faq_override` mode
 
-### 3. 向量模型
-结论摘要：
-- OpenAI 官方文档显示 `text-embedding-3-small` 成本较低，适合做知识检索
-- 对中小知识库场景性价比较高
+## 2026-04-24 Doc Chunk Import Findings
 
-参考来源：
-- https://platform.openai.com/docs/models/text-embedding-3-small
-- https://platform.openai.com/docs/guides/embeddings/embedding-models%20.class
+- Reviewed `doc_chunks.csv` is now imported into the same FastGPT dataset through OpenAPI, under virtual collection `gx-yiku-doc-chunks-reviewed`
+- After changing imported chunk `q` values from raw locator titles to semantic chunk text, `searchTest` top hits became much more usable for questions like `硅藻板环保吗`, `硅藻素板适用范围是什么`, and `硅藻储能发光板适合什么场景`
+- Similar-question expansion is practical here: alias rows work well for the website-facing `faq_override` path and are much cheaper than continuing to wait on FastGPT app direct generation to become stable
+- The main remaining blocker is the FastGPT app workflow itself: recent `llm_request_records` still show the model often behaving as if retrieved knowledge was not injected into the final prompt, or spending output budget on `reasoningText` while leaving `answerText` empty
+- Current conclusion: the knowledge layer is materially stronger now, but the website override layer is still required for production-like stability
 
-## 四、对本项目的判断
-- 如果用户输入的 `flshGPT` 指的是 `FastGPT`，那么它是当前最适合本项目的第一阶段平台
-- 推荐采用“三层结构”：
-  - 平台层：FastGPT
-  - 模型层：默认主模型 + 备用模型
-  - 渠道层：官网、微信公众号/企业微信、后续再扩展其他渠道
-- 第一阶段先把 80% 重复咨询自动化，不追求一次做成全能机器人
+## 2026-04-27 Startup Validation Findings
 
-## 五、建议的第一阶段功能边界
-- 公司介绍与品牌问答
-- 产品介绍与卖点问答
-- 常见应用场景问答
-- 基础招商/合作问答
-- 留资收集
-- 转人工
+- `scripts/start-local.ps1` starts cleanly once the Docker Desktop service `com.docker.service` is running
+- `scripts/start-demo.ps1` serves the demo successfully on `http://127.0.0.1:8099/`
+- `http://127.0.0.1:3100/` and `http://127.0.0.1:8099/` both returned HTTP 200 during this validation run
+- Demo chat for `你好` returned mode `clarify`, which matches the intended low-intent guardrail behavior
+- Demo chat for `新房适合用吗？` and `产品有专利和检测报告吗？` both returned mode `faq_override`, not `fastgpt_app`
+- Direct FastGPT app calls to `http://127.0.0.1:3100/api/v1/chat/completions` with key `fgtest-001` still returned empty `choices[0].message.content`
+- The user-visible demo is usable, but the real FastGPT app path is still not healthy enough to count as stable RAG
+- The sampled demo fallback path is noticeably slow: the two measured requests took about `14.6s` and `28.7s`
 
-暂不建议第一阶段就做：
-- 复杂报价自动生成
-- 售后工单全流程自动化
-- 多系统深度打通
-- 语音客服
+## 2026-04-27 RAG Repair Findings
 
-## 六、FastGPT 与 ChatWiki 的差异
+- The FastGPT dataset search node was already returning non-empty `quoteList`, so retrieval itself was not the root failure
+- The real root cause was in the chat node configuration: retrieved knowledge was not being injected into the final model prompt, even when retrieval succeeded
+- A second issue compounded the failure: the chat node was effectively running with the old `glm-5` runtime config until `fastgpt-app` was restarted, so the model spent output budget in `reasoningText` while `answerText` stayed empty
+- After updating the chat node to use a valid `quoteQA` reference, an explicit `quoteTemplate`, an explicit `quotePrompt`, and the non-reasoning model `glm-4-flash-250414`, the direct FastGPT app path began returning real answers again
+- After the restart, `chat_item_responses` showed `historyPreview` now includes the retrieved knowledge block and the AI node returns `answerText` with `finishReason: stop`
+- Demo verification now shows common questions can return mode `fastgpt_app` instead of dropping to `faq_override`
+- Upstream model overload can still happen. One captured FastGPT run failed with `429 该模型当前访问量过大，请您稍后再试`, which explains why some demo requests still fall back even though the workflow is now configured correctly
+- To reduce repeated waits and lower fallback frequency, the demo server now caches successful FastGPT answers by normalized question and can serve repeat hits as `fastgpt_cache`
 
-### 1. FastGPT
-官方文档与仓库显示：
-- FastGPT 重点是通用型知识库问答、RAG 检索、可视化工作流和标准 API 接入
-- 支持通过 API 接入企业官网、企微、飞书等多种渠道
-- 更适合“官网 AI 客服”“企业知识库问答”“可控扩展的业务流程”
+## 2026-04-27 DOCX FAQ Import Findings
 
-适合本项目的点：
-- 官网场景更自然
-- 平台相对通用，不被微信生态绑定
-- 适合先做轻量问答 + 留资 + 转人工
+- Source file `C:\Users\Administrator\Desktop\资料\亿库公司资料(3)\亿库公司资料\客户最常问的10-50问题及标准回答.docx` was converted into a clean FAQ CSV with 31 `question,answer` rows
+- The new reusable conversion script is `scripts/build_docx_faq_csv.py`
+- The new reusable FastGPT import script is `scripts/import-fastgpt-faq-csv.ps1`
+- The imported FAQ collection name is `gx-yiku-customer-top-10-50-docx`
+- The new collection was added into dataset `69e03880d9b607f9459582d6` as virtual collection `69eec926fe467f0f1a5311b1`
+- Direct FastGPT verification succeeded after import:
+- `亿库硅藻板防霉等级是多少？` -> `0级`
+- `硅藻板对宠物友好吗？` -> returned the new pet-friendly FAQ answer from the DOCX material
+- 
+## 2026-04-27 Knowledge Base Prompt Handoff Findings
 
-参考来源：
-- https://doc.fastgpt.cn/
-- https://github.com/labring/FastGPT
+- `KNOWLEDGE_BASE_TASK_PROMPT.md` formalizes the current scope, classification rules, and output contract for knowledge-base curation under `C:\Users\Administrator\Desktop\资料`
+- The required class model is explicit: each candidate should be judged as FAQ, document chunk, exclude from the public customer-service KB, or needs manual review
+- The expected deliverables are `faq.csv`, `faq_with_sources.csv`, `doc_chunks.csv`, `product_knowledge.md`, `review_notes.md`, and optionally `excluded_files.md`
+- The repository already contains reusable scripts named in the prompt, including `scripts/build_docx_faq_csv.py`, `scripts/import-fastgpt-faq-csv.ps1`, `scripts/import-fastgpt-doc-chunks.ps1`, `tools/knowledge_ingest/ingest.py`, and `tools/fastgpt_kb/build_fastgpt_kb.py`
+- Current top-level source items under `C:\Users\Administrator\Desktop\资料` are 2 directories plus 4 files
+- `客户跟踪表-伍国涛2026.4.22.xls` is a clear exclude candidate because it contains customer-tracking business data rather than public-facing product knowledge
+- The two FAQ DOCX files are byte-identical duplicates, so only one should be treated as the primary source of truth
+- The safest public doc-chunk candidates in the current source set are `亿库简介(3).pdf`, `功能性硅藻板材20241024.pptx`, and `硅藻板宣传册.pptx`
+- `河南青丰.pdf` currently extracts as empty pages, so it should stay in `needs_review` until OCR or a better source file is available
 
-### 2. ChatWiki
-官方仓库 README 显示：
-- ChatWiki 产品定位更偏“微信生态工作流自动化平台”
-- 深度集成公众号私信、留言、关注/取关、菜单点击等触发器
-- 支持人机协同客服、问答知识库、未知问题聚类、从人工对话总结 FAQ
-- 技术栈包含 `golang + python + PostgreSQL16 + pgvector + zhparser`
+## 2026-04-27 FAQ Second-Pass Refinement Findings
 
-适合本项目的点：
-- 如果未来重心在公众号、微信客服、微信小店客服，ChatWiki 会更强
-- 如果希望“微信生态获客 + AI 回复 + 人工客服协同”一体化，它比 FastGPT 更贴微信业务
+- The first-round FAQ cleanup removed the most obvious script tone, but many rows still sounded like edited standard answers rather than natural sales-consultant speech
+- The most efficient maintenance path is not direct CSV hand-editing; it is a reusable generator with batch-level style rules plus high-frequency question overrides
+- The 71-row FAQ set now works better when grouped into five rewrite batches: company basics, core capabilities, user experience, application scenarios, and credential/commercial questions
+- Re-importing the refreshed curated FAQ set into FastGPT materially improves the base wording of retrieved answers, but FastGPT generation still sometimes adds extra consultant-like filler or redundant human-handoff phrasing
+- Because of that remaining generation variance, the website-side `Format-CustomerServiceAnswer` cleanup layer is still useful even after the FAQ source text becomes stronger
+- The refreshed final package under `C:\Users\Administrator\Desktop\资料\outputs\fastgpt_import\final_for_import` contains 20 stable FAQ rows, 31 audited FAQ rows, 118 doc chunks, review notes, and an exclusion ledger
 
-参考来源：
-- https://github.com/zhimaAi/chatwiki
+## 2026-04-28 Knowledge-Base Cleanup Findings
 
-### 3. 当前判断
-- 如果广西亿库第一阶段主战场是官网客服，优先 `FastGPT`
-- 如果第一阶段主战场是微信公众号/微信客服，并且要深度自动化运营，`ChatWiki` 值得重点考虑
-- 如果你们后续两边都要，技术上可以采用：
-  - 平台主线：FastGPT
-  - 微信运营增强：ChatWiki
-  但这会明显增加维护复杂度，不建议第一阶段就双平台并行
-
-## 七、商用与版权/许可注意事项
-
-### 1. FastGPT 许可
-FastGPT 官方开源协议说明：
-- 基于 Apache 2.0，但附加条件
-- 允许作为后台服务直接商用
-- 未经授权不得做类似官方云服务的多租户 SaaS
-- 未经商业授权，商用服务需保留相关版权信息和 LOGO
-
-参考来源：
-- https://doc.fastgpt.cn/docs/agreement/open-source/
-- https://github.com/labring/FastGPT
-
-### 2. ChatWiki 许可
-ChatWiki 官方仓库 LICENSE 明确写到：
-- 基于 Apache License 2.0，但带附加条件
-- 个人可免费商用
-- 公司/组织用于商业目的时，需要向出品方获取商业许可
-- 未经书面授权，不允许用源码运营多租户 SaaS
-- 如果使用其前端组件，不得移除或修改 ChatWiki 的 logo、商标或版权信息
-
-参考来源：
-- https://github.com/zhimaAi/chatwiki/blob/main/LICENSE
-
-### 3. 业务资料版权风险
-就企业 AI 客服本身而言，通常最容易踩坑的不是模型，而是“你喂给模型的数据”：
-- 公司自有 FAQ、产品资料、招商资料：通常风险最低
-- 转载的竞品文案、行业报告、图片、视频、宣传册：需要确认使用权
-- 微信文章、官网抓取、第三方案例：要确认是否有转载和商用权
-- 品牌 logo、商标、专利图片：要确认是否为自有或已获授权
-
-### 4. 模型服务条款
-使用智谱 API 时，还需要遵守其开放平台服务协议和内容安全规则。
-
-参考来源：
-- https://docs.bigmodel.cn/cn/terms/service-agreement
-- https://docs.bigmodel.cn/cn/guide/platform/securityaudit
-
-说明：
-- 这部分属于通用合规提醒，不等同于正式法律意见
-
-## 八、智谱模型选型结论
-
-### 1. 主模型
-截至 2026-04-13，智谱官方文档已提供 `GLM-5`。
-
-我的判断：
-- 如果你希望中文理解、复杂问答、流程扩展能力更强，`GLM-5` 可以作为主模型
-- 对广西亿库这种企业客服场景，它是能用的，而且更符合国内商用落地习惯
-
-参考来源：
-- https://docs.bigmodel.cn/cn/guide/models/text/glm-5
-
-### 2. 向量模型
-智谱官方确实提供向量模型：
-- `Embedding-2`
-- `Embedding-3`
-
-建议：
-- 优先 `Embedding-3`
-原因：
-- 支持更灵活的向量维度
-- 明确面向高精度语义搜索和知识库场景
-
-参考来源：
-- https://docs.bigmodel.cn/cn/guide/models/embedding/embedding-2
-- https://docs.bigmodel.cn/cn/guide/models/embedding/embedding-3
-
-### 3. 审核模型要不要加 GLM-4-Flash
-截至 2026-04-13，智谱官方仍提供 `GLM-4-Flash-250414`，它具备低成本和较长上下文能力。
-
-我的判断：
-- 可以加，但更适合做“业务审核/答案质检”
-- 不建议把它当成唯一的“内容安全审核”
-
-更合理的分工是：
-- 内容安全审核：优先用智谱官方 `moderation` 内容安全接口
-- 业务质检审核：可用 `GLM-4-Flash-250414` 检查回答是否跑题、是否缺少依据、是否应该转人工
-
-参考来源：
-- https://docs.bigmodel.cn/api-reference/工具-api/内容安全
-- https://docs.bigmodel.cn/cn/guide/models/text/glm-4
-- https://docs.bigmodel.cn/cn/guide/models/free/glm-4-flash-250414
-
-### 4. 推荐的智谱版组合
-- 平台：FastGPT
-- 主模型：GLM-5
-- 向量模型：Embedding-3
-- 内容安全：moderation
-- 业务质检：GLM-4-Flash-250414
-- 渠道：官网优先，微信第二阶段接入
-## 2026-04-22 Startup Findings
-- `docker compose ... ps` shows the FastGPT stack is up, including `fastgpt-app`, Mongo, Redis, MinIO, Postgres, plugin, and MCP server.
-- `http://127.0.0.1:3100` returns HTTP 200, so the main FastGPT web app is reachable.
-- `http://127.0.0.1:9101` returns HTTP 200, so the MinIO console is reachable.
-- `fastgpt-code-sandbox` and `opensandbox-server` show `unhealthy`, but Docker health details show the probe itself is failing because `curl` is missing in the container image. Logs still show successful startup and HTTP 200 sandbox responses.
-- Local raw-doc and import-output validation scripts succeed when run with `-ExecutionPolicy Bypass`.
-- `.venv\\Scripts\\python.exe` is broken after the project was copied; the launcher still points at a missing base interpreter, so local Python-based workflows should not rely on this copied venv.
-- `scripts/demo-server.ps1` had become syntactically corrupted and was replaced with a clean server implementation that preserves the same demo API routes and static-file serving behavior.
-- `scripts/start-demo.ps1` now acts as a reliable foreground starter. A child-process verification against port `8104` returned HTTP 200.
-- `tools/validate/check_config.ps1` still reports all keys missing for `infra/fastgpt/.env.local`; this looks like a parser or file-format compatibility issue rather than missing values.
-
-## 2026-04-22 Validation Repair Findings
-- The original parse failure in `check_config.ps1` was not a missing-config problem. It was a Windows PowerShell compatibility problem across three layers: UTF-8 `.env.local` reading, regex-based parsing, and comma-separated `-RequiredKeys` arriving as a single string when invoked through `powershell -File`.
-- Replacing regex parsing with explicit split-at-first-`=` parsing made the `.env` reader stable.
-- Normalizing a single comma-separated `RequiredKeys` string fixed the false "all keys missing" result when the script is called from the command line.
-- `tools/validate/required_keys.txt` was stale for this repo and was updated to `OPENAI_BASE_URL`, `CHAT_API_KEY`, `FASTGPT_PORT`, and `MINIO_PORT`.
-- `tools/validate/run_all.ps1` now defaults to `infra/fastgpt/.env.local`, which matches this repository's real config location.
-- `scripts/rebuild-venv.ps1` was added and verified successfully against both a temporary test venv and the real `.venv`.
-- Rebuilding the real `.venv` completed successfully, and `.\.venv\Scripts\python.exe` now imports `openpyxl` and `docx` correctly.
-- The rebuilt `pyvenv.cfg` still points to the Python Store launcher path under `AppData\Local\Microsoft\WindowsApps`, but that path now exists on this machine and the venv is working normally.
-- Both delegated workers failed before execution with upstream model `503` responses, so the main agent completed both repairs locally.
+- The company-provided `C:\Users\Administrator\Desktop\zi liao` package did not reveal a large missing public source set; the bigger issue was that usable public knowledge was mixed together with contracts, price sheets, customer tracking, and internal sales/ops material
+- The audited `faq_with_sources.csv` is a much safer source of truth than the raw DOCX FAQ export because it already separates `keep`, `needs_review`, and `exclude`
+- The 20 `keep` FAQ rows from that audited file were already present in the raw `customer_top_10_50_docx.csv` source set, but the raw set also contained risky claims about price, allergy, odor, signal shielding, and health effects
+- Splitting public doc chunks by risk rules reduced the active reviewed chunk set from 118 rows to 82 rows, with 36 rows moved into a separate review-only file
+- `河南青丰.pdf` is currently a 2-page image-only PDF with zero extractable text via PyMuPDF, and there is no OCR engine installed locally, so it cannot be responsibly imported yet
+- Even after removing high-risk FAQ rows and deleting the stale coarse FAQ file collection, direct FastGPT generation can still infer unsupported answers from nearby context; this confirms that dataset cleanup alone is not enough and generation constraints still need tightening

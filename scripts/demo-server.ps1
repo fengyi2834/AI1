@@ -364,10 +364,99 @@ function Get-ClarifyingAnswer {
     param([string]$Question)
 
     if (Test-IsGreetingOrLowIntent -Question $Question) {
-        return "可以，您直接说真实需求就行。比如您更想了解这几个方向中的哪一个：适不适合新房、能不能改善异味、适合哪些空间，还是想了解合作方式？"
+        return "可以，您直接说您现在最想确认的点就行。比如更关心适不适合新房、会不会有味道、适合哪些空间，还是想了解报价和合作方式？"
     }
 
-    return "我先不乱给您堆资料。您可以直接告诉我最想确认的一点，比如新房能不能用、除味效果怎么样、适合什么空间，或者公司和产品情况，我再按这个点给您回答。"
+    return "我先不乱给您堆资料。您可以直接告诉我现在最想确认的一点，比如新房能不能用、除味表现怎么样、适合什么空间，或者公司和产品情况，我再按这个点给您说清楚。"
+}
+
+function Get-ConcernLead {
+    param(
+        [string]$Question,
+        [string]$Answer
+    )
+
+    if (-not $Question -or -not $Answer) {
+        return $null
+    }
+
+    if ($Question -match "新房|装修|入住|家装" -and $Answer -notmatch "顾虑很正常|如果您主要担心") {
+        return "如果您主要担心新房入住前的环保和味道，这个顾虑很正常。"
+    }
+
+    if ($Question -match "除味|除醛|甲醛|异味|空气" -and $Answer -notmatch "这个问题问得很关键|比较在意异味") {
+        return "如果您比较在意异味和空气感受，这个问题问得很关键。"
+    }
+
+    if ($Question -match "专利|检测|报告|资质|证书" -and $Answer -notmatch "先看这类依据是对的|靠谱") {
+        return "如果您是在确认产品靠不靠谱，先看专利和检测这类依据是对的。"
+    }
+
+    if ($Question -match "适合|场景|哪里用|用在哪" -and $Answer -notmatch "先看使用场景会更稳|适不适合自己这个空间") {
+        return "如果您是在看适不适合自己这个空间，先确认使用场景会更稳。"
+    }
+
+    return $null
+}
+
+function Format-CustomerServiceAnswer {
+    param(
+        [string]$Question,
+        [string]$Answer,
+        [string]$Mode = ""
+    )
+
+    if (-not $Answer) {
+        return $Answer
+    }
+
+    $trimmed = $Answer.Trim()
+    if (-not $trimmed) {
+        return $trimmed
+    }
+
+    $trimmed = $trimmed -replace "^根据现有资料显示", "就目前资料来看"
+    $trimmed = $trimmed -replace "^现有资料显示", "就目前资料来看"
+    $trimmed = $trimmed -replace "^资料显示", "就目前资料来看"
+    $trimmed = $trimmed -replace "根据现有资料", "就目前资料来看"
+    $trimmed = $trimmed -replace "现有资料显示", "就目前资料来看"
+    $trimmed = $trimmed -replace "资料显示", "就目前资料来看"
+    $trimmed = $trimmed -replace "根据资料", "就目前资料来看"
+    $trimmed = $trimmed -replace "因为就目前资料来看产品", "就目前资料来看，这款产品"
+    $trimmed = $trimmed -replace "因为就目前资料来看", "因为就目前资料来看，"
+    $trimmed = $trimmed -replace "^您好[，,。!！]?\s*", ""
+    $trimmed = $trimmed -replace "如果需要具体的证书编号或检测报告原件，建议您转人工咨询，我可以帮您对接。", "如果您需要具体的证书编号或检测报告原件，我可以帮您对接人工继续确认。"
+    $trimmed = $trimmed -replace "建议您转人工服务，我们会为您详细提供。", "如果您需要具体的证书编号或检测报告原件，我可以帮您对接人工继续确认。"
+    $trimmed = $trimmed -replace "建议您转人工服务", "如果您需要更细的原件或参数，我可以帮您对接人工继续确认"
+    $trimmed = $trimmed -replace "如果您需要具体的证书编号或检测报告原件，如果您需要更细的原件或参数，我可以帮您对接人工继续确认获取更详细的信息。", "如果您需要具体的证书编号或检测报告原件，我可以帮您对接人工继续确认。"
+    $trimmed = $trimmed -replace "如果您需要具体的证书编号或检测报告原件，如果您需要更细的原件或参数，我可以帮您对接人工继续确认。", "如果您需要具体的证书编号或检测报告原件，我可以帮您对接人工继续确认。"
+    $trimmed = $trimmed -replace "^建议转人工提供", "如果您需要更细的原件或参数，我们这边再安排人工继续跟进"
+    $trimmed = $trimmed -replace "建议转人工提供", "如果您需要更细的原件或参数，我们这边再安排人工继续跟进"
+    $trimmed = $trimmed -replace "建议您转人工咨询", "如果您需要更细的原件或参数，我可以帮您对接人工继续确认"
+    $trimmed = $trimmed -replace "建议转人工咨询", "如果您需要更细的原件或参数，我可以帮您对接人工继续确认"
+    $trimmed = $trimmed -replace "建议转人工报价", "具体报价这边建议让顾问结合实际需求继续跟进"
+    $trimmed = $trimmed -replace "建议转人工", "这类细节更适合让顾问继续跟进"
+    $trimmed = $trimmed -replace "我建议您", "您这边可以"
+
+    $lead = Get-ConcernLead -Question $Question -Answer $trimmed
+    if ($lead) {
+        $trimmed = "$lead$trimmed"
+    }
+
+    return $trimmed
+}
+
+function New-ChatAnswerResult {
+    param(
+        [string]$Question,
+        [string]$Answer,
+        [string]$Mode
+    )
+
+    return @{
+        answer = Format-CustomerServiceAnswer -Question $Question -Answer $Answer -Mode $Mode
+        mode = $Mode
+    }
 }
 
 function Get-RelevantFacts {
@@ -461,15 +550,15 @@ function Get-BusinessGuardAnswer {
     }
 
     if ($Question -match "代理|经销|加盟|合作") {
-        return "代理合作这类问题，我这边目前不能直接给您承诺具体政策、报价或流程，因为通常要结合城市、合作方式和预估规模来确认。您如果方便，可以留一下所在城市、想做的合作方向和大概体量，我们再安排顾问跟您对接会更准确。"
+        return "合作这类问题可以聊，不过具体政策、报价和推进流程，一般都要结合城市、合作方式和预估规模来确认。您如果方便，可以告诉我们所在城市、想做的合作方向和大概体量，我们再安排顾问按实际情况跟您对接，这样会更准确。"
     }
 
     if ($Question -match "报价|多少钱|价格|怎么卖") {
-        return "报价这块需要结合产品型号、使用面积、项目场景和所在城市来确认，当前资料里没有统一公开价。我建议您直接告诉我们大概面积、使用场景和所在城市，我们这边再让顾问按实际需求给您报价。"
+        return "价格这块一般不是一个固定口径，要结合产品型号、使用面积、项目场景和所在城市一起看，当前资料里也没有统一公开价。您如果愿意，可以直接告诉我们大概面积、使用场景和所在城市，我们再让顾问按实际需求给您报价。"
     }
 
     if ($Question -match "合同|施工|工期|勘测|设计方案|定制方案|现场") {
-        return "这类问题通常要结合项目现场和具体需求确认，当前资料里没有固定合同条款或施工工期可直接套用。您可以先说一下项目城市、空间类型和大概需求，我们再安排顾问继续跟进会更稳妥。"
+        return "这类问题通常要结合项目现场和具体需求来确认，当前资料里没有固定合同条款或统一施工工期可以直接套用。您可以先说一下项目城市、空间类型和大概需求，我们再安排顾问继续跟进会更稳妥。"
     }
 
     return $null
@@ -489,7 +578,7 @@ function Get-CompanyProfileAnswer {
     $asksLocation = $Question -match "在哪|哪里|地址"
 
     if ($asksCompany -and (($asksProduct -and $asksLocation) -or ($asksEffect -and $asksQuality) -or ($asksProduct -and $asksEffect))) {
-        return "广西亿库光养硅藻环保科技有限公司是一家集科工贸于一体的环保科技企业，主营功能性硅藻板，主要面向环保建筑装饰板及相关应用场景。就产品来说，这款板材主打环保、调湿、防霉、净化空气、吸音和隔热，适合家装、办公、学校、病房、宾馆等室内空间。就质量和使用体验来看，现有资料显示它无胶水、无油漆、无甲醛，并具备抗菌防霉、保温隔热和吸音等特点。公司地址目前显示在广西北海海洋产业科技园区。"
+        return "您如果是想先整体判断这家公司和产品靠不靠谱，可以先看这几个关键信息。广西亿库光养硅藻环保科技有限公司是一家做环保功能性板材相关业务的企业，主营的是功能性硅藻板，主要面向室内建筑装饰应用。就产品卖点来看，这款板材主打环保、调湿、防霉、净化空气、吸音和隔热，适合家装、办公、学校、病房、宾馆等室内空间。就目前资料来看，它强调无胶水、无油漆、无甲醛，同时具备抗菌防霉、保温隔热和吸音等特点。公司地址资料里显示在广西北海海洋产业科技园区。"
     }
 
     return $null
@@ -502,15 +591,15 @@ function Get-GuidedAnswer {
     )
 
     if ($Question -match "新房|装修|入住|家装") {
-        return "适合新房和家装场景。现有资料显示，这款硅藻板无胶水、无油漆，不含甲醛等挥发性有害物质，安装后基本无明显异味，同时具备净化空气、调湿和防霉能力。若是新房入住前，仍建议配合正常通风和检测一起使用。"
+        return "这款板材是适合新房和家装场景的。就目前资料来看，它无胶水、无油漆，不含甲醛等挥发性有害物质，安装后基本无明显异味，同时还有净化空气、调湿和防霉这些功能。更稳妥一点的话，新房入住前还是建议配合正常通风和检测一起看。"
     }
 
     if ($Question -match "除味|除醛|甲醛|异味|空气") {
-        return "可以在一定程度上帮助减轻异味并改善空气环境。现有资料显示，这款硅藻板可吸附并净化甲醛、苯、甲苯、二甲苯和氨等有害物质，也能帮助减轻烟味、宠物味和厨房异味残留。更稳妥的做法还是配合日常通风一起使用。"
+        return "它可以在一定程度上帮助减轻异味、改善空气环境。就目前资料来看，这款硅藻板可吸附并净化甲醛、苯、甲苯、二甲苯和氨等有害物质，也能帮助减轻烟味、宠物味和厨房异味残留。更稳妥的做法还是配合日常通风一起使用。"
     }
 
     if ($Question -match "介绍|产品|做什么|是什么") {
-        return "这款产品是亿库光养的功能性硅藻板，主打环保、调湿、防霉、净化空气、隔热和健康舒适体验。根据现有资料，它还具备防水阻燃、降噪吸音、抗菌防霉、保温隔热等功能，适用于家庭装修、办公、学校、病房、宾馆和会所等室内空间。"
+        return "这款产品是亿库光养的功能性硅藻板，核心卖点是环保、调湿、防霉、净化空气、隔热和更舒适的室内体验。就目前资料来看，它还具备防水阻燃、降噪吸音、抗菌防霉、保温隔热等特点，适用于家庭装修、办公、学校、病房、宾馆和会所等室内空间。"
     }
 
     return $null
@@ -564,16 +653,16 @@ function Get-DemoFacts {
     $knowledgeText = ($KnowledgeRecords | Select-Object -First 24) -join "`n"
 
     if ($Question -match "odor|smell" -or $knowledgeText -match "odor absorption|assist odor absorption") {
-        $facts.Add("This material may help with odor absorption in suitable conditions.")
+        $facts.Add("这款材料在合适场景下可以辅助吸附异味。")
     }
     if ($Question -match "new house|house|home" -or $knowledgeText -match "home and commercial spaces") {
-        $facts.Add("It is described as suitable for both home and commercial spaces.")
+        $facts.Add("资料里提到它适用于家庭和商业室内空间。")
     }
     if ($Question -match "ventilation|inspection|new house" -or $knowledgeText -match "ventilation and inspection") {
-        $facts.Add("For a new house scenario, ventilation and inspection are still recommended.")
+        $facts.Add("如果是新房场景，仍建议结合正常通风和检测一起判断。")
     }
     if ($facts.Count -eq 0) {
-        $facts.Add("The current demo knowledge is best for product overview, usage scenarios, and lead capture flow.")
+        $facts.Add("当前演示知识更适合回答产品介绍、使用场景和咨询跟进类问题。")
     }
 
     return $facts
@@ -592,7 +681,7 @@ function Get-FallbackAnswer {
     }
 
     $facts = Get-DemoFacts -Question $Question -KnowledgeRecords $KnowledgeRecords
-    return "Reference answer from current knowledge:`n- " + (($facts | Select-Object -First 3) -join "`n- ")
+    return "我先按当前能确认到的资料给您说几点：`n- " + (($facts | Select-Object -First 3) -join "`n- ")
 }
 
 function Get-DemoChatMode {
@@ -781,67 +870,47 @@ function Get-ChatAnswer {
     $chatMode = Get-DemoChatMode -EnvMap $envMap
 
     if ($businessGuardAnswer) {
-        return @{
-            answer = $businessGuardAnswer
-            mode = "business_guard"
-        }
+        return New-ChatAnswerResult -Question $Question -Answer $businessGuardAnswer -Mode "business_guard"
     }
 
     if ($companyProfileAnswer) {
-        return @{
-            answer = $companyProfileAnswer
-            mode = "company_profile"
-        }
+        return New-ChatAnswerResult -Question $Question -Answer $companyProfileAnswer -Mode "company_profile"
     }
 
     if ($clarifyingAnswer -and -not $guidedAnswer) {
-        return @{
-            answer = $clarifyingAnswer
-            mode = "clarify"
-        }
+        return New-ChatAnswerResult -Question $Question -Answer $clarifyingAnswer -Mode "clarify"
     }
 
     if ($guidedAnswer) {
-        return @{
-            answer = $guidedAnswer
-            mode = "guided_answer"
-        }
+        return New-ChatAnswerResult -Question $Question -Answer $guidedAnswer -Mode "guided_answer"
     }
 
     if ($chatBackendMode -in @("fastgpt", "fastgpt_prefer")) {
         $cachedFastGptAnswer = Get-CachedFastGptAnswer -Question $Question
         if ($cachedFastGptAnswer) {
-            return @{
-                answer = $cachedFastGptAnswer
-                mode = "fastgpt_cache"
-            }
+            return New-ChatAnswerResult -Question $Question -Answer $cachedFastGptAnswer -Mode "fastgpt_cache"
         }
 
         $fastgptAttempted = $true
         $fastgptAnswer = Invoke-FastGPTAppChat -Question $Question -EnvMap $envMap
         if ($fastgptAnswer) {
-            Set-CachedFastGptAnswer -Question $Question -Answer $fastgptAnswer.answer
+            $formattedFastGptAnswer = Format-CustomerServiceAnswer -Question $Question -Answer $fastgptAnswer.answer -Mode $fastgptAnswer.mode
+            Set-CachedFastGptAnswer -Question $Question -Answer $formattedFastGptAnswer
             if ($bestFaqAnswer -and $fastgptAnswer.answer -match "请问您") {
-                return @{
-                    answer = $bestFaqAnswer
-                    mode = "faq_override"
-                }
+                return New-ChatAnswerResult -Question $Question -Answer $bestFaqAnswer -Mode "faq_override"
             }
-            return $fastgptAnswer
+            return @{
+                answer = $formattedFastGptAnswer
+                mode = $fastgptAnswer.mode
+            }
         }
 
         if ($bestFaqAnswer) {
-            return @{
-                answer = $bestFaqAnswer
-                mode = "faq_override"
-            }
+            return New-ChatAnswerResult -Question $Question -Answer $bestFaqAnswer -Mode "faq_override"
         }
 
         if ($chatBackendMode -eq "fastgpt") {
-            return @{
-                answer = "我这边刚刚没从知识库应用里拿到稳定结果。您可以换一种更具体的问法，比如：适不适合新房、会不会有味道、公司在哪里，我再继续帮您确认。"
-                mode = "fastgpt_unavailable"
-            }
+            return New-ChatAnswerResult -Question $Question -Answer "我这边刚刚没从知识库应用里拿到稳定结果。您可以换一种更具体的问法，比如适不适合新房、会不会有味道、公司在哪里，我再继续帮您确认。" -Mode "fastgpt_unavailable"
         }
     }
 
@@ -896,10 +965,7 @@ function Get-ChatAnswer {
         }
     }
 
-    return @{
-        answer = $answer
-        mode = $mode
-    }
+    return New-ChatAnswerResult -Question $Question -Answer $answer -Mode $mode
 }
 
 function Get-ContentType {

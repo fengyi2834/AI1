@@ -1,54 +1,81 @@
-# AI客服项目任务计划
+# Task Plan
 
-## 项目目标
-为广西亿库光养硅藻环保科技有限公司规划一套适合中小企业落地的 AI 客服方案，优先减少人工重复答疑成本，并支持后续扩展到获客、线索收集和销售辅助。
+## Goal
 
-## 当前已知
-- 公司当前真实起点仍以 `xlsx/docx` 原始资料为主，知识库需要从零整理
-- 当前目录中有 1 份历史 FAQ CSV：`广西亿库光养硅藻板知识库FAQ.csv`，可作为参考样例
-- 用户初步倾向使用 `FastGPT`（原始输入为 `flshGPT`，当前按 `FastGPT` 理解）
-- 当前阶段目标已从纯规划转为“先实现本地可跑通的项目骨架”
+Move the current website AI customer service flow from a demo-style scripted retrieval path to a real, testable FastGPT RAG path, while keeping the business guardrail layer.
 
-## 阶段计划
-| 阶段 | 内容 | 状态 |
-| --- | --- | --- |
-| 1 | 盘点现有资料与业务场景 | 已完成 |
-| 2 | 调研候选平台与模型组合 | 已完成 |
-| 3 | 输出适合中小企业的推荐技术栈 | 进行中 |
-| 4 | 制定第一阶段上线范围与实施顺序 | 已完成 |
-| 5 | 输出 FastGPT + 智谱 部署清单与配置项表 | 已完成 |
-| 6 | 实现本地开发脚手架、资料整理工具、官网 Demo | 已完成 |
-| 7 | 集成校验与修复明显问题 | 进行中 |
+## Phases
 
-## 关键决策
-- 优先采用“能快速上线、低维护、可迭代”的方案，而不是一开始自研全套系统
-- 平台层优先考虑 `FastGPT`
-- 模型层采用智谱路线：`GLM-5.1 + Embedding-3 + moderation + GLM-4-Flash-250414`
-- 开发阶段允许多 Agent 并行提速；上线运行阶段控制 Agent 数量
-- 第一阶段先把“原始资料整理 -> 知识库导入 -> 官网客服接入”跑通
+| Phase | Status | Step |
+|---|---|---|
+| 1 | complete | Verify the current web demo, FastGPT app, dataset, and call path |
+| 2 | in_progress | Repair or rebuild the FastGPT app and dataset so the real RAG path is testable |
+| 3 | in_progress | Keep the web layer pointed at the real FastGPT app first, with fallback only when needed |
+| 4 | in_progress | Re-test real Q&A behavior and summarize remaining blockers plus rollout steps |
+| 5 | complete | Restructure project docs into a low-token startup path |
+| 6 | complete | Convert external source materials into a FastGPT-ready QA/document import package |
+| 7 | complete | Resume knowledge-base curation from `KNOWLEDGE_BASE_TASK_PROMPT.md` and classify `C:\Users\Administrator\Desktop\资料` by FAQ / doc chunk / exclude / needs review |
+| 8 | complete | Produce refreshed deliverables and review notes for the latest source set under `C:\Users\Administrator\Desktop\资料` |
+| 9 | complete | Refine the full 71-row FAQ set into more natural customer-service wording, then republish and verify |
+| 10 | complete | Replace raw FAQ/doc imports with audited keep/safe versions and verify residual model risk |
 
-## 风险与注意事项
-- 如果后续需要中国大陆稳定商用，模型可用性、网络连通性和合规要提前确认
-- 原始资料如果结构混乱，会直接影响知识检索效果
-- 当前本机没有可直接调用的 `python` 启动器，Python 脚本无法在本机完成编译验证
-- 子代理返回的部分 JSON 模板曾有语法错误，已由主进程修复
+## Decisions
 
-## 下一步
-1. 补充真实 `xlsx/docx` 原始资料到 `data/raw_docs/`
-2. 安装 Python 运行环境并实际执行资料整理脚本
-3. 填写 `infra/fastgpt/.env.local` 中的智谱配置
-4. 本地启动 Docker 开发环境
-5. 导入知识资料并联调官网 Demo
-## 2026-04-22 Startup Audit
-- Status: core FastGPT stack can start and is currently reachable on `http://127.0.0.1:3100`
-- Status: MinIO console is reachable on `http://127.0.0.1:9101`
-- Status: demo server script was rebuilt and can be started successfully through `scripts/start-demo.ps1`
-- Risk: local `.venv` is not portable after copy or move; its Python launcher is broken on this machine
-- Risk: `tools/validate/check_config.ps1` currently fails to parse `infra/fastgpt/.env.local` even though the file contains the required keys
+- The website should not rely only on `demo-server.ps1` scripted retrieval. Prefer the real FastGPT app path.
+- Keep the business guardrail layer for clarification, lead capture, transfer-to-human, and risky question handling.
+- If the FastGPT app path is unstable, allow fallback to the direct model path so the website remains usable.
+- Rebuild the FAQ knowledge base as one-question-one-answer records instead of large Markdown-table chunks.
+- Use `PROJECT_INDEX.md`, `CURRENT_STATE.md`, `DECISIONS.md`, and `NEXT_ACTION.md` as the default startup context for future sessions.
+- FAQ curation should now be maintained through `scripts/build_curated_faq.py` with batch-based humanization rules plus targeted high-frequency overrides, instead of one-off manual CSV edits.
+- Contract, customer-tracking, quoting, order-pricing, and internal sales-process materials are now treated as permanent exclusions from the public customer-service knowledge base.
 
-## 2026-04-22 Validation Repair
-- Status: `tools/validate/check_config.ps1` now correctly parses `infra/fastgpt/.env.local`
-- Status: `tools/validate/run_all.ps1` now points at the repo's real FastGPT env file by default
-- Status: `.venv` was rebuilt successfully and verified with `openpyxl` and `python-docx`
-- Status: `scripts/rebuild-venv.ps1` was added so the environment can be repaired again after future copy or move operations
-- Note: delegated workers failed with upstream `503`, so the final repair was completed locally by the main agent
+## Errors Encountered
+
+| Error | Attempt | Resolution |
+|---|---|---|
+| FastGPT app workflow orphan edges | 1 | Rebuilt the `nodes` and `edges` structure |
+| FastGPT app AI chat timeout | 2 | Narrowed the issue to model and workflow-node configuration layers; tuning continues |
+| FAQ rebuild script encoding breakage | 1 | Rewrote the script path with ASCII-safe handling |
+| FastGPT dataset rebuild wrote Chinese as `?` | 1 | Switched Mongo script execution from PowerShell piping to `docker cp` plus in-container `mongosh` execution |
+| FastGPT app tune script broke on non-ASCII prompt strings | 1 | Switched app prompt literals in the tuning script to ASCII-safe strings before publishing |
+| Demo startup check found Docker engine unavailable | 1 | Started `com.docker.service`, then reran the standard local startup script successfully |
+| Real FastGPT app still returns empty chat content | 1 | Confirmed the website stays usable only because `faq_override` catches weak or empty FastGPT replies |
+| FastGPT retrieval succeeded but chat prompt still had no injected knowledge | 1 | Added explicit `quoteTemplate` plus `quotePrompt`, then restarted `fastgpt-app` so runtime loaded the repaired workflow |
+| Demo requests still fell back after the RAG repair | 1 | Traced the remaining fallback cases to upstream `429` model overload, then added a successful-answer cache in the demo server for repeat questions |
+
+## 2026-04-24 Documentation Restructure
+
+- Added a low-token handoff layer: `PROJECT_INDEX.md`, `CURRENT_STATE.md`, `DECISIONS.md`, `NEXT_ACTION.md`
+- Archived older long-form docs into `docs/archive/`
+- Changed the root `README.md` into a short navigation page
+
+## 2026-04-24 FastGPT Import Package
+
+- Inspected materials under `C:\Users\Administrator\Desktop\资料\outputs`
+- Improved `tools/fastgpt_kb/build_fastgpt_kb.py` to better handle trailing topic names and avoid low-quality page-title FAQ rows
+- Generated a final import package under `C:\Users\Administrator\Desktop\资料\outputs\fastgpt_import\final_for_import`
+
+## 2026-04-24 RAG Stabilization
+
+- Fixed `scripts/rebuild-fastgpt-dataset.ps1`, `scripts/register-fastgpt-chat-model.ps1`, and `scripts/tune-fastgpt-rag-app.ps1` to execute Mongo scripts through `docker cp` so UTF-8 content survives end to end
+- Rebuilt the FastGPT dataset and confirmed Chinese FAQ rows now persist correctly in Mongo
+- Added high-frequency natural-language FAQ aliases such as new-house, odor, environment, and home-decoration questions through `scripts/build_curated_faq.py`
+- Retuned the published FastGPT app to use broader FAQ-oriented retrieval settings and republished the workflow
+- Hardened `scripts/demo-server.ps1` so weak FastGPT answers now downgrade into `faq_override` instead of leaking low-confidence answers to the website
+
+## 2026-04-24 Doc Chunk Import
+
+- Added `scripts/import-fastgpt-doc-chunks.ps1` to import reviewed `doc_chunks.csv` into the existing FastGPT dataset through official OpenAPI endpoints
+- Imported 98 reviewed document chunks into FastGPT virtual collection `gx-yiku-doc-chunks-reviewed`
+- Adjusted imported doc-chunk `q` fields to prefer semantic chunk content instead of raw `pdf page=x` or `pptx slide=x` locator titles
+- Expanded FAQ aliases further for patent/testing, `硅藻素板`, and `硅藻储能发光板` natural-language phrasings
+- Tightened local FAQ matching in `scripts/demo-server.ps1` so exact question matches win before loose overlap matching
+ 
+## 2026-04-27 Knowledge Base Curation Resume
+
+- Continue in the current workspace because planning files and reusable scripts already exist here
+- Use `KNOWLEDGE_BASE_TASK_PROMPT.md` as the active scope and output contract for the next knowledge-base pass
+- Top-level source items currently visible under `C:\Users\Administrator\Desktop\资料` are `1`, `亿库公司资料(3)`, `亿库硅藻板销售价格23年10月.docx`, `客户最常问的10-50问题及标准回答_20260427084321.docx`, `客户跟踪表-伍国涛2026.4.22.xls`, and `河南青丰.pdf`
+- `客户跟踪表-伍国涛2026.4.22.xls` is an immediate exclude candidate because it is customer-tracking business data rather than public customer-service knowledge
+- Final refreshed deliverables were assembled under `C:\Users\Administrator\Desktop\资料\outputs\fastgpt_import\final_for_import`
+- The final package keeps 20 stable public FAQ rows, flags 10 FAQ rows as `needs_review`, excludes 1 price-related FAQ row, and includes 118 document chunks plus supporting review notes

@@ -1,9 +1,7 @@
 param(
-    [string]$SourceCsv,
+    [string]$SourceCsv = ".\data\faq\gx_yiku_fastgpt_faq_curated.csv",
     [string]$DatasetId = "69e03880d9b607f9459582d6",
-    [string]$CollectionName = "",
-    [string]$ApiBaseUrl = "http://127.0.0.1:3100/api",
-    [string]$ApiKey = "fgtest-001",
+    [string]$CollectionId = "69e03bd6d9b607f9459583bd",
     [string]$MongoContainer = "fastgpt-mongo",
     [string]$MongoUser = "myusername",
     [string]$MongoPassword = "mypassword"
@@ -29,43 +27,19 @@ function Invoke-MongoScriptFile {
     }
 }
 
-function Invoke-FastGPTJson {
-    param(
-        [string]$Path,
-        [object]$Body
-    )
-
-    $uri = $ApiBaseUrl.TrimEnd("/") + $Path
-    $json = $Body | ConvertTo-Json -Depth 10
-    return Invoke-RestMethod -Uri $uri `
-        -Method Post `
-        -Headers @{ Authorization = "Bearer $ApiKey" } `
-        -ContentType "application/json; charset=utf-8" `
-        -Body ([System.Text.Encoding]::UTF8.GetBytes($json))
-}
-
-function Invoke-FastGPTDeleteCollection {
-    param([string[]]$CollectionIds)
-
-    if (-not $CollectionIds -or $CollectionIds.Count -eq 0) {
-        return
-    }
-
-    $body = @{ collectionIds = $CollectionIds }
-    $null = Invoke-FastGPTJson -Path "/core/dataset/collection/delete" -Body $body
-}
-
 if (-not (Test-Path -LiteralPath $SourceCsv)) {
     throw "Source CSV not found: $SourceCsv"
 }
 
-if (-not $CollectionName) {
-    $CollectionName = [System.IO.Path]::GetFileNameWithoutExtension($SourceCsv)
-}
-
 $rows = Import-Csv -LiteralPath $SourceCsv
 if (-not $rows -or $rows.Count -eq 0) {
-    throw "No FAQ rows found in: $SourceCsv"
+    throw "No FAQ rows found: $SourceCsv"
+}
+
+$tmpJs = Join-Path $PWD "tmp\\fastgpt_rebuild_dataset.js"
+
+if (-not (Test-Path -LiteralPath (Split-Path -Parent $tmpJs))) {
+    New-Item -ItemType Directory -Path (Split-Path -Parent $tmpJs) -Force | Out-Null
 }
 
 $cleanRows = foreach ($row in $rows) {
@@ -82,53 +56,14 @@ $cleanRows = foreach ($row in $rows) {
     }
 }
 
-if (-not $cleanRows -or $cleanRows.Count -eq 0) {
-    throw "No valid FAQ rows remained after cleaning."
-}
-
-$listResponse = Invoke-FastGPTJson -Path "/core/dataset/collection/listV2" -Body @{
-    offset = 0
-    pageSize = 100
-    datasetId = $DatasetId
-    parentId = $null
-    searchText = ""
-}
-
-$existing = @($listResponse.data.list | Where-Object { $_.name -eq $CollectionName })
-if ($existing.Count -gt 0) {
-    Invoke-FastGPTDeleteCollection -CollectionIds @($existing | ForEach-Object { $_._id })
-    Start-Sleep -Seconds 1
-}
-
-$createResponse = Invoke-FastGPTJson -Path "/core/dataset/collection/create" -Body @{
-    datasetId = $DatasetId
-    parentId = $null
-    name = $CollectionName
-    type = "virtual"
-    metadata = @{
-        importSource = "faq_csv"
-        sourceFile = (Resolve-Path -LiteralPath $SourceCsv).Path
-    }
-}
-
-$collectionId = [string]$createResponse.data
-if (-not $collectionId) {
-    throw "Failed to create FastGPT collection."
-}
-
 $rowsJson = $cleanRows | ConvertTo-Json -Depth 4 -Compress
-$tmpJs = Join-Path $PWD ("tmp\\fastgpt_import_faq_collection_{0}.js" -f ([guid]::NewGuid().ToString("N")))
-
-if (-not (Test-Path -LiteralPath (Split-Path -Parent $tmpJs))) {
-    New-Item -ItemType Directory -Path (Split-Path -Parent $tmpJs) -Force | Out-Null
-}
 
 $js = @'
 const rows = __ROWS_JSON__;
 const datasetId = ObjectId('__DATASET_ID__');
 const collectionId = ObjectId('__COLLECTION_ID__');
 
-const dataset = db.datasets.findOne({ _id: datasetId });
+const dataset = db.datasets.findOne({_id: datasetId});
 if (!dataset) {
   throw new Error('dataset_not_found');
 }
@@ -166,8 +101,8 @@ function tokenize(text) {
   return tokens;
 }
 
-db.dataset_datas.deleteMany({ collectionId });
-db.dataset_data_texts.deleteMany({ collectionId });
+db.dataset_datas.deleteMany({ datasetId });
+db.dataset_data_texts.deleteMany({ datasetId });
 
 const now = new Date();
 let chunkIndex = 0;
@@ -237,7 +172,8 @@ printjson({
 
 $js = $js.Replace('__ROWS_JSON__', $rowsJson)
 $js = $js.Replace('__DATASET_ID__', $DatasetId)
-$js = $js.Replace('__COLLECTION_ID__', $collectionId)
+$js = $js.Replace('__COLLECTION_ID__', $CollectionId)
+
 $js | Set-Content -LiteralPath $tmpJs -Encoding UTF8
 
 try {
@@ -245,17 +181,3 @@ try {
 } finally {
     Remove-Item -LiteralPath $tmpJs -Force -ErrorAction SilentlyContinue
 }
-
-$verifyList = Invoke-FastGPTJson -Path "/core/dataset/data/v2/list" -Body @{
-    offset = 0
-    pageSize = 10
-    collectionId = $collectionId
-    searchText = ""
-}
-
-Write-Output ("CollectionId: {0}" -f $collectionId)
-Write-Output ("CollectionName: {0}" -f $CollectionName)
-Write-Output ("SourceCsv: {0}" -f (Resolve-Path -LiteralPath $SourceCsv).Path)
-Write-Output ("SourceRows: {0}" -f $rows.Count)
-Write-Output ("ImportedRows: {0}" -f $cleanRows.Count)
-Write-Output ("CollectionDataTotal: {0}" -f $verifyList.data.total)

@@ -1,12 +1,22 @@
-# 文档入口
+# Docs Layout
 
-当前仓库中的关键文档：
+## Default Read Path
 
-- `ai_customer_service_stack_plan.md`
-- `fastgpt_zhipu_deployment_checklist.md`
-- `fastgpt_zhipu_config_table.md`
-- `findings.md`
+New sessions should start from the root handoff docs:
+
+1. `PROJECT_INDEX.md`
+2. `CURRENT_STATE.md`
+3. `DECISIONS.md`
+4. `NEXT_ACTION.md`
+
+## Working Notes
+
 - `task_plan.md`
+- `findings.md`
 - `progress.md`
 
-建议后续逐步把正式交付文档收敛到 `docs/` 目录。
+These files are for in-flight work and may be more detailed than a new session needs.
+
+## Archive
+
+Longer historical docs live under `docs/archive/`. Read them only when you need deeper background or older assumptions.
