@@ -20,6 +20,9 @@ Move the project from a demo-style scripted retrieval flow to a real, testable F
   - `C:\Users\Administrator\Desktop\资料\outputs\fastgpt_import\final_for_import\faq.csv`
   - `C:\Users\Administrator\Desktop\资料\outputs\fastgpt_import\final_for_import\doc_chunks.csv`
   - `C:\Users\Administrator\Desktop\资料\outputs\fastgpt_import\final_for_import\product_knowledge.md`
+- Supplemental teammate/restore docs now live under:
+  - `docs/guides/RESTORE_BUNDLE_GUIDE.md`
+  - `docs/guides/TEAMMATE_SETUP.md`
 
 ## What Is Working
 
@@ -34,12 +37,16 @@ Move the project from a demo-style scripted retrieval flow to a real, testable F
 - Website fallback can hide FastGPT regressions unless both paths are tested explicitly.
 - The current app can return text, but real RAG behavior is still inconsistent.
 - Some FastGPT answers are still too generic or too inferential for production use.
+- Current active reviewed collections are:
+  - `gx_yiku_fastgpt_faq_curated` with 91 rows
+  - `gx-yiku-customer-top-10-50-docx` with 20 audited keep rows
+  - `gx-yiku-doc-chunks-reviewed` with 82 safe chunks
 
 ## Current Priority
 
-1. Import or verify the package under `C:\Users\Administrator\Desktop\资料\outputs\fastgpt_import\final_for_import`.
-2. Re-test the real FastGPT app path with real questions.
-3. Decide whether to keep tuning the existing app or rebuild a clean FastGPT app using the new package.
+1. Continue tightening FastGPT generation constraints so answers rely less on unsupported inference.
+2. Re-test the real FastGPT app path with real questions, especially high-risk health/effect questions.
+3. Keep `doc_chunks_needs_review.csv` out of the active collection until evidence review is complete.
 4. Keep the website on `fastgpt_prefer` so the demo remains usable during tuning.
 
 ## Known Risk

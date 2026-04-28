@@ -20,3 +20,12 @@ These files are for in-flight work and may be more detailed than a new session n
 ## Archive
 
 Longer historical docs live under `docs/archive/`. Read them only when you need deeper background or older assumptions.
+
+## Guides
+
+- `docs/guides/RESTORE_BUNDLE_GUIDE.md`
+- `docs/guides/TEAMMATE_SETUP.md`
+
+## Task Prompts
+
+- `docs/tasks/KNOWLEDGE_BASE_TASK_PROMPT.md`

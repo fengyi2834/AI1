@@ -75,7 +75,7 @@
 - Verified the new DOCX-backed knowledge through direct FastGPT chat:
 - `亿库硅藻板防霉等级是多少？` -> `0级`
 - `硅藻板对宠物友好吗？` -> returned the expected pet-friendly answer
-- Read `KNOWLEDGE_BASE_TASK_PROMPT.md` and confirmed it matches the desired next workflow: inspect `C:\Users\Administrator\Desktop\资料` first, then classify by FAQ / doc chunk / exclude / needs review before any import work
+- Read `docs/tasks/KNOWLEDGE_BASE_TASK_PROMPT.md` and confirmed it matches the desired next workflow: inspect `C:\Users\Administrator\Desktop\资料` first, then classify by FAQ / doc chunk / exclude / needs review before any import work
 - Recovered the active workspace context from `task_plan.md`, `findings.md`, and `progress.md` so the knowledge-base curation task can continue in the current conversation instead of starting from zero
 - Enumerated the top-level source set under `C:\Users\Administrator\Desktop\资料` and identified `客户跟踪表-伍国涛2026.4.22.xls` as an immediate exclude candidate for the public customer-service knowledge base
 - Recursively audited `资料\\1` and `资料\\亿库公司资料(3)` and separated likely public product materials from internal training, contract, pricing, customer-tracking, and sales-process files

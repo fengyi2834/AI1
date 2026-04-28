@@ -14,7 +14,7 @@ Move the current website AI customer service flow from a demo-style scripted ret
 | 4 | in_progress | Re-test real Q&A behavior and summarize remaining blockers plus rollout steps |
 | 5 | complete | Restructure project docs into a low-token startup path |
 | 6 | complete | Convert external source materials into a FastGPT-ready QA/document import package |
-| 7 | complete | Resume knowledge-base curation from `KNOWLEDGE_BASE_TASK_PROMPT.md` and classify `C:\Users\Administrator\Desktop\资料` by FAQ / doc chunk / exclude / needs review |
+| 7 | complete | Resume knowledge-base curation from `docs/tasks/KNOWLEDGE_BASE_TASK_PROMPT.md` and classify `C:\Users\Administrator\Desktop\资料` by FAQ / doc chunk / exclude / needs review |
 | 8 | complete | Produce refreshed deliverables and review notes for the latest source set under `C:\Users\Administrator\Desktop\资料` |
 | 9 | complete | Refine the full 71-row FAQ set into more natural customer-service wording, then republish and verify |
 | 10 | complete | Replace raw FAQ/doc imports with audited keep/safe versions and verify residual model risk |
@@ -74,7 +74,7 @@ Move the current website AI customer service flow from a demo-style scripted ret
 ## 2026-04-27 Knowledge Base Curation Resume
 
 - Continue in the current workspace because planning files and reusable scripts already exist here
-- Use `KNOWLEDGE_BASE_TASK_PROMPT.md` as the active scope and output contract for the next knowledge-base pass
+- Use `docs/tasks/KNOWLEDGE_BASE_TASK_PROMPT.md` as the active scope and output contract for the next knowledge-base pass
 - Top-level source items currently visible under `C:\Users\Administrator\Desktop\资料` are `1`, `亿库公司资料(3)`, `亿库硅藻板销售价格23年10月.docx`, `客户最常问的10-50问题及标准回答_20260427084321.docx`, `客户跟踪表-伍国涛2026.4.22.xls`, and `河南青丰.pdf`
 - `客户跟踪表-伍国涛2026.4.22.xls` is an immediate exclude candidate because it is customer-tracking business data rather than public customer-service knowledge
 - Final refreshed deliverables were assembled under `C:\Users\Administrator\Desktop\资料\outputs\fastgpt_import\final_for_import`

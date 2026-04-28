@@ -28,6 +28,8 @@ Near-term usable chain:
 - `data/import_ready/`: import-ready knowledge assets and extracted source material
 - `web-demo/`: website chat demo
 - `tools/`: ingestion and validation tooling
+- `docs/guides/`: restore and teammate setup guides
+- `docs/tasks/`: reusable task prompts such as knowledge-base curation scope
 - `docs/archive/`: historical planning, checklist, and older setup docs
 - `C:\Users\Administrator\Desktop\资料\outputs\fastgpt_import\final_for_import`: latest reviewed external-material import package
 

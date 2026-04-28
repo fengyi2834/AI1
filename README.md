@@ -25,6 +25,8 @@ The project is building a practical FastGPT-based AI customer service flow for G
 - `data/`: knowledge assets
 - `tools/`: ingest and validation tooling
 - `web-demo/`: website integration demo
+- `docs/guides/`: teammate handoff and restore guides
+- `docs/tasks/`: reusable task prompts
 - `docs/archive/`: older detailed docs
 
 ## Useful Commands

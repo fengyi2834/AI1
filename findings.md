@@ -93,7 +93,7 @@
 - 
 ## 2026-04-27 Knowledge Base Prompt Handoff Findings
 
-- `KNOWLEDGE_BASE_TASK_PROMPT.md` formalizes the current scope, classification rules, and output contract for knowledge-base curation under `C:\Users\Administrator\Desktop\资料`
+- `docs/tasks/KNOWLEDGE_BASE_TASK_PROMPT.md` formalizes the current scope, classification rules, and output contract for knowledge-base curation under `C:\Users\Administrator\Desktop\资料`
 - The required class model is explicit: each candidate should be judged as FAQ, document chunk, exclude from the public customer-service KB, or needs manual review
 - The expected deliverables are `faq.csv`, `faq_with_sources.csv`, `doc_chunks.csv`, `product_knowledge.md`, `review_notes.md`, and optionally `excluded_files.md`
 - The repository already contains reusable scripts named in the prompt, including `scripts/build_docx_faq_csv.py`, `scripts/import-fastgpt-faq-csv.ps1`, `scripts/import-fastgpt-doc-chunks.ps1`, `tools/knowledge_ingest/ingest.py`, and `tools/fastgpt_kb/build_fastgpt_kb.py`
