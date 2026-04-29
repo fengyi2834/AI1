@@ -107,3 +107,38 @@
 - Deleted the stale file-backed collection `guangxi-yiku-faq.csv` so old coarse FAQ chunks no longer pollute retrieval
 - Checked `河南青丰.pdf` directly with PyMuPDF after copying to an ASCII path; both pages are image-only with zero extractable text, and no OCR engine is installed locally, so it remains `needs_review`
 - Direct FastGPT app verification showed the cleaned knowledge base is now smaller and safer, but the generation layer can still infer beyond evidence on some questions, so prompt/business-guard tightening is still needed
+- Benchmarked the current FastGPT app path on 2026-04-28 with `glm-4-flash-250414`; three representative questions returned usable answers in about `2.82s`, `4.07s`, and `3.09s`
+- Temporarily switched the FastGPT app chat node model from `glm-4-flash-250414` to `glm-5`, restarted `fastgpt-app`, and repeated the same benchmark
+- Confirmed that the `glm-5` FastGPT workflow returned empty answer content for all three test questions after roughly `8.35s`, `7.12s`, and `12.3s`
+- Restored the FastGPT app chat node to `glm-4-flash-250414`, restarted `fastgpt-app`, and re-verified that the direct app endpoint returned normal answers again
+- Ran direct Zhipu multimodal tests with the provided screenshot: `glm-4v-flash` answered correctly in `0.98s`, `glm-5v-turbo` answered correctly in `7.44s`, and `glm-5` answered incorrectly after `14.14s`
+- Replaced the demo web UI text with clean UTF-8 Chinese copy and added image-upload, preview, and remove-image interactions in `web-demo/index.html`, `web-demo/css/style.css`, and `web-demo/js/app.js`
+- Added a dedicated vision prompt file at `config/fastgpt/prompts/demo_vision_system_prompt.md` and rewrote the existing demo/system prompt files into more stable Chinese customer-service wording
+- Extended `scripts/demo-server.ps1` with a separate `glm-4v-flash` image-chat path that accepts `imageDataUrl` and `imageName`, while keeping the original text-only FastGPT path for normal questions
+- Updated `scripts/tune-fastgpt-rag-app.ps1` to publish Chinese `quotePrompt` and `systemPrompt` strings using ASCII-safe Unicode escapes, then republished and restarted `fastgpt-app`
+- Verified the live FastGPT app runtime now stores Chinese prompt text for the published `gxChatNode`
+- Started the local demo server on `http://127.0.0.1:8099/` and confirmed:
+- Text-only question `这块板材适合新房使用吗？` returned mode `fastgpt_app` in about `3.88s`
+- Image + text question using the provided screenshot returned mode `vision_model` in about `3.07s` and correctly identified the selected model as `glm-4-flash-250414`
+- Image-only request using the same screenshot returned mode `vision_model` in about `3.94s` and produced a stable visible-content summary instead of fabricating extra conclusions
+- Refined `scripts/demo-server.ps1` again so image requests now run a two-stage path: image understanding first, then knowledge-grounded answer generation, which returns mode `vision_rag` when the fusion path succeeds
+- Verified the two-stage demo image flow locally: the provided screenshot with a text question returned mode `vision_rag` in about `6.24s`, while image-only summary stayed around `4.92s`
+- Added `scripts/upload_minio_public.py` to upload local files into the existing FastGPT public MinIO bucket and verified the uploaded screenshot URL was reachable from both `127.0.0.1:9100` and `192.168.77.97:9100`
+- Extended `scripts/register-fastgpt-chat-model.ps1` with configurable `Vision`, `Reasoning`, token, and context parameters so visual models can be registered cleanly instead of by one-off DB edits
+- Extended `scripts/tune-fastgpt-rag-app.ps1` with `AnswerModel`, `EnableVision`, and `EnableImageUpload` parameters, then published the current FastGPT app in a visual configuration using `glm-4v-flash`, `aiChatVision=true`, and `canSelectImg=true`
+- Found the real blocker for FastGPT vision runtime was not the workflow JSON but `fastgpt-aiproxy` channel configuration: the active `zhipu-local` channel allowed `glm-5` and `glm-4-flash-250414` but did not list `glm-4v-flash`
+- Updated `fastgpt-aiproxy` channel `1` to include `glm-4v-flash`, restarted `fastgpt-aiproxy` and `fastgpt-app`, and re-tested direct FastGPT calls
+- Verified the upgraded FastGPT app endpoint on 2026-04-28:
+- Text-only request still worked with the visual model in about `3.72s`
+- Image + text request using the uploaded screenshot URL worked in about `2.63s` and identified the selected model as `glm-4-flash-250414`
+- The current demo server still falls back to local `vision_rag` for some image requests even though direct FastGPT vision now works, so there is still room to tighten the FastGPT-first success path if needed
+- Added Markdown image rendering support to `web-demo/js/app.js`, so future assistant replies can display stored photo URLs inline with `![alt](url)` instead of only showing raw text links
+- Uploaded the four local board photos from `tu` into the existing public MinIO bucket and created a structured image index at `data/image_catalog/board_images.json`
+- Added `data/import_ready/board_image_catalog.md` so the current local knowledge layer also contains a text record of the available board image assets and URLs
+- Extended `scripts/demo-server.ps1` with a deterministic board-image branch that recognizes requests like `样板图`, `实拍图`, `照片`, and board names such as `背景墙板`, `菜板`, `防火板`, and `隔音板`
+- Re-tested the new image-catalog branch locally on 2026-04-28:
+- `我想看防火板样板图` -> returned only the fireproof-board image
+- `发下隔音板照片` -> returned only the soundproof-board image
+- `把四种板的实拍图都发我看看` and `想看样板图` -> returned all four images
+- Created a new root handoff file `AGENT.md` that summarizes the project goal, startup flow, RAG/vision architecture, knowledge-base state, board-image catalog, known risks, and recommended new-session prompt
+- Updated `PROJECT_INDEX.md` and `NEXT_ACTION.md` so future restarts read `AGENT.md` first instead of jumping straight into the older four-file handoff path

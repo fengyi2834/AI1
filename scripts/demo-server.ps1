@@ -3,12 +3,15 @@
     [string]$WebRoot = ".\web-demo",
     [string]$EnvFile = ".\infra\fastgpt\.env.local",
     [string]$KnowledgeDir = ".\data\import_ready",
+    [string]$ImageCatalogPath = ".\data\image_catalog\board_images.json",
     [string]$FaqCsv = ".\data\faq\gx_yiku_fastgpt_faq_curated.csv",
-    [string]$PromptTemplate = ".\config\fastgpt\prompts\demo_live_system_prompt.md"
+    [string]$PromptTemplate = ".\config\fastgpt\prompts\demo_live_system_prompt.md",
+    [string]$VisionPromptTemplate = ".\config\fastgpt\prompts\demo_vision_system_prompt.md"
 )
 
 $ErrorActionPreference = "Stop"
 $script:FastGptAnswerCache = @{}
+$script:PythonExe = ""
 
 function Get-EnvMap {
     param([string]$Path)
@@ -133,6 +136,247 @@ function Get-FaqEntries {
     } catch {
         return @()
     }
+}
+
+function Get-ImageCatalogEntries {
+    param([string]$Path)
+
+    if (-not $Path -or -not (Test-Path -LiteralPath $Path)) {
+        return @()
+    }
+
+    try {
+        $raw = Get-Content -LiteralPath $Path -Raw -Encoding UTF8
+        return @($raw | ConvertFrom-Json)
+    } catch {
+        return @()
+    }
+}
+
+function Get-LocalStorageEndpoint {
+    param([hashtable]$EnvMap)
+
+    $port = if ($EnvMap -and $EnvMap["MINIO_PORT"]) {
+        $EnvMap["MINIO_PORT"]
+    } else {
+        "9100"
+    }
+
+    return "http://127.0.0.1:$port"
+}
+
+function Get-ProxiedCatalogImageUrl {
+    param([string]$OriginalUrl)
+
+    if (-not $OriginalUrl) {
+        return $null
+    }
+
+    try {
+        $uri = [System.Uri]$OriginalUrl
+        $objectPath = $uri.AbsolutePath.TrimStart("/")
+        if (-not $objectPath) {
+            return $OriginalUrl
+        }
+
+        return "/api/media?path=$([System.Uri]::EscapeDataString($objectPath))"
+    } catch {
+        return $OriginalUrl
+    }
+}
+
+function Get-QueryParameterValue {
+    param(
+        [string]$QueryString,
+        [string]$Name
+    )
+
+    if (-not $QueryString -or -not $Name) {
+        return $null
+    }
+
+    $trimmedQuery = $QueryString.TrimStart("?")
+    foreach ($pair in ($trimmedQuery -split "&")) {
+        if (-not $pair) {
+            continue
+        }
+
+        $key, $value = ($pair -split "=", 2)
+        if ($key -ne $Name) {
+            continue
+        }
+
+        $safeValue = if ($null -ne $value) { $value } else { "" }
+        return [System.Uri]::UnescapeDataString($safeValue.Replace("+", "%20"))
+    }
+
+    return $null
+}
+
+function Read-RemoteBinaryResponse {
+    param([string]$Url)
+
+    $request = [System.Net.HttpWebRequest]::Create($Url)
+    $request.Method = "GET"
+    $request.Timeout = 15000
+    $request.ReadWriteTimeout = 15000
+
+    $response = $request.GetResponse()
+    try {
+        $memory = New-Object System.IO.MemoryStream
+        try {
+            $responseStream = $response.GetResponseStream()
+            try {
+                $responseStream.CopyTo($memory)
+            } finally {
+                $responseStream.Dispose()
+            }
+        } finally {
+            $memory.Position = 0
+        }
+
+        $contentType = $response.ContentType
+        if (-not $contentType) {
+            $contentType = "application/octet-stream"
+        }
+
+        return @{
+            Bytes = $memory.ToArray()
+            ContentType = $contentType
+        }
+    } finally {
+        $response.Dispose()
+    }
+}
+
+function Get-ProxiedMediaResponse {
+    param(
+        [string]$RequestPath,
+        [hashtable]$EnvMap
+    )
+
+    if (-not $RequestPath.StartsWith("/api/media?", [System.StringComparison]::OrdinalIgnoreCase)) {
+        return $null
+    }
+
+    try {
+        $requestUri = [System.Uri]("http://localhost" + $RequestPath)
+        $objectPath = Get-QueryParameterValue -QueryString $requestUri.Query -Name "path"
+        if (-not $objectPath) {
+            return @{
+                StatusCode = 404
+                ContentType = "text/plain; charset=utf-8"
+                Text = "Missing media path"
+            }
+        }
+
+        $trimmedPath = $objectPath.TrimStart("/")
+        $targetUrl = (Get-LocalStorageEndpoint -EnvMap $EnvMap).TrimEnd("/") + "/" + $trimmedPath
+        $remote = Read-RemoteBinaryResponse -Url $targetUrl
+        return @{
+            StatusCode = 200
+            ContentType = $remote.ContentType
+            Bytes = $remote.Bytes
+        }
+    } catch {
+        return @{
+            StatusCode = 404
+            ContentType = "text/plain; charset=utf-8"
+            Text = "Media not found"
+        }
+    }
+}
+
+function Test-IsBoardImageRequest {
+    param([string]$Question)
+
+    if (-not $Question) {
+        return $false
+    }
+
+    return $Question -match "样板|样品|实拍|照片|图片|发图|看看图|看下图|看图|图给我|图发我|发几张|发一下图|发一下照片"
+}
+
+function Get-MatchedBoardImageEntries {
+    param(
+        [string]$Question,
+        [object[]]$ImageCatalogEntries
+    )
+
+    if (-not $ImageCatalogEntries -or $ImageCatalogEntries.Count -eq 0) {
+        return @()
+    }
+
+    if (-not $Question) {
+        return @()
+    }
+
+    $matched = New-Object System.Collections.Generic.List[object]
+    foreach ($entry in $ImageCatalogEntries) {
+        $aliases = @()
+        if ($entry.aliases) {
+            $aliases = @($entry.aliases)
+        }
+        $candidates = @($entry.title, $entry.id, $entry.source_file) + $aliases
+
+        foreach ($alias in $candidates) {
+            $aliasText = (($alias | Out-String).Trim())
+            if (-not $aliasText) {
+                continue
+            }
+
+            if ($Question -match [regex]::Escape($aliasText)) {
+                $matched.Add($entry)
+                break
+            }
+        }
+    }
+
+    if ($matched.Count -gt 0) {
+        return @($matched.ToArray())
+    }
+
+    $wantsAll = $Question -match "都发|都看看|全部|四种|所有|每种"
+    if ($wantsAll -or (Test-IsBoardImageRequest -Question $Question)) {
+        return @($ImageCatalogEntries)
+    }
+
+    return @()
+}
+
+function Get-BoardImageAnswer {
+    param(
+        [string]$Question,
+        [object[]]$ImageCatalogEntries
+    )
+
+    if (-not (Test-IsBoardImageRequest -Question $Question)) {
+        return $null
+    }
+
+    $matchedEntries = Get-MatchedBoardImageEntries -Question $Question -ImageCatalogEntries $ImageCatalogEntries
+    if (-not $matchedEntries -or $matchedEntries.Count -eq 0) {
+        return "我这边可以给您发四种板材的样板图和实拍图，但这次没有准确识别出您想看的是哪一种。您可以直接说：背景墙板、菜板、防火板、隔音板，我就按名称给您发。"
+    }
+
+    $lines = New-Object System.Collections.Generic.List[string]
+    if ($matchedEntries.Count -eq 1) {
+        $entry = $matchedEntries[0]
+        $imageUrl = Get-ProxiedCatalogImageUrl -OriginalUrl $entry.image_url
+        $lines.Add("这是您要看的$($entry.title)样板图，先发您参考：")
+        $lines.Add("![$($entry.title)]($imageUrl)")
+        $lines.Add("如果您还想看另外几种板的实拍图，也可以直接告诉我名称。")
+        return ($lines -join "`n")
+    }
+
+    $lines.Add("先把您要看的几种板材样板图发您参考：")
+    foreach ($entry in $matchedEntries) {
+        $imageUrl = Get-ProxiedCatalogImageUrl -OriginalUrl $entry.image_url
+        $lines.Add("$($entry.title)：")
+        $lines.Add("![$($entry.title)]($imageUrl)")
+    }
+    $lines.Add("如果您想单独看某一种板的更多实拍角度，也可以继续告诉我名称。")
+    return ($lines -join "`n")
 }
 
 function Resolve-FaqCsvPath {
@@ -776,6 +1020,7 @@ function Test-IsWeakFastGPTAnswer {
 function Invoke-FastGPTAppChat {
     param(
         [string]$Question,
+        [string]$ImageUrl,
         [hashtable]$EnvMap
     )
 
@@ -795,6 +1040,29 @@ function Invoke-FastGPTAppChat {
         return $null
     }
 
+    $userPrompt = if ($Question) {
+        $Question
+    } else {
+        "请先总结图片里能明确看到的内容，再回答用户问题。"
+    }
+
+    $messageContent = if ($ImageUrl) {
+        @(
+            @{
+                type = "text"
+                text = $userPrompt
+            },
+            @{
+                type = "image_url"
+                image_url = @{
+                    url = $ImageUrl
+                }
+            }
+        )
+    } else {
+        $userPrompt
+    }
+
     $payload = @{
         chatId = "demo-" + [guid]::NewGuid().ToString("N").Substring(0, 12)
         stream = $false
@@ -802,10 +1070,10 @@ function Invoke-FastGPTAppChat {
         messages = @(
             @{
                 role = "user"
-                content = $Question
+                content = $messageContent
             }
         )
-    } | ConvertTo-Json -Depth 6
+    } | ConvertTo-Json -Depth 10
 
     try {
         $response = Invoke-RestMethod -Uri $apiUrl -Method Post -Headers @{
@@ -819,20 +1087,269 @@ function Invoke-FastGPTAppChat {
 
         return @{
             answer = $answer
-            mode = "fastgpt_app"
+            mode = if ($ImageUrl) { "fastgpt_vision_app" } else { "fastgpt_app" }
         }
     } catch {
         return $null
     }
 }
 
+function Save-ImageDataUrlToPublicStorage {
+    param(
+        [string]$ImageDataUrl,
+        [string]$ImageName = ""
+    )
+
+    if (-not (Test-HasImagePayload -ImageDataUrl $ImageDataUrl)) {
+        return $null
+    }
+
+    $match = [regex]::Match($ImageDataUrl, '^data:image/(?<format>png|jpeg|jpg|webp);base64,(?<data>.+)$')
+    if (-not $match.Success) {
+        return $null
+    }
+
+    $format = $match.Groups['format'].Value.ToLowerInvariant()
+    $base64Data = $match.Groups['data'].Value
+    $extension = if ($format -eq 'jpeg') { 'jpg' } else { $format }
+    $safeName = if ($ImageName) { [System.IO.Path]::GetFileNameWithoutExtension($ImageName) } else { 'chat_image' }
+    $safeName = ($safeName -replace '[^A-Za-z0-9_-]+', '_').Trim('_')
+    if (-not $safeName) {
+        $safeName = 'chat_image'
+    }
+
+    $tempDir = Join-Path $PSScriptRoot "..\tmp"
+    if (-not (Test-Path -LiteralPath $tempDir)) {
+        New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+    }
+
+    $tempFile = Join-Path $tempDir ("upload_" + [guid]::NewGuid().ToString("N") + "_" + $safeName + "." + $extension)
+    $uploadScript = Join-Path $PSScriptRoot "upload_minio_public.py"
+    if (-not (Test-Path -LiteralPath $uploadScript)) {
+        return $null
+    }
+
+    try {
+        [System.IO.File]::WriteAllBytes($tempFile, [Convert]::FromBase64String($base64Data))
+        if (-not $script:PythonExe) {
+            $pythonCmd = Get-Command python -ErrorAction SilentlyContinue
+            if ($pythonCmd) {
+                $script:PythonExe = $pythonCmd.Source
+            }
+        }
+        if (-not $script:PythonExe) {
+            return $null
+        }
+
+        $output = & $script:PythonExe $uploadScript $tempFile --prefix "chat-images" 2>$null
+        $url = (($output | Out-String).Trim() -split "`r?`n" | Select-Object -Last 1)
+        if ($url -and $url -match '^https?://') {
+            return $url
+        }
+    } catch {
+    } finally {
+        Remove-Item -LiteralPath $tempFile -Force -ErrorAction SilentlyContinue
+    }
+
+    return $null
+}
+
+function Test-HasImagePayload {
+    param([string]$ImageDataUrl)
+
+    if (-not $ImageDataUrl) {
+        return $false
+    }
+
+    return $ImageDataUrl -match "^data:image\/(png|jpeg|jpg|webp);base64,"
+}
+
+function Invoke-VisionModelChat {
+    param(
+        [string]$Question,
+        [string]$ImageDataUrl,
+        [string]$ImageName,
+        [string]$SystemPrompt,
+        [string]$Knowledge,
+        [hashtable]$EnvMap
+    )
+
+    if (-not (Test-HasImagePayload -ImageDataUrl $ImageDataUrl)) {
+        return $null
+    }
+
+    $baseUrl = ""
+    if ($EnvMap.ContainsKey("OPENAI_BASE_URL")) {
+        $baseUrl = (($EnvMap["OPENAI_BASE_URL"] | Out-String).Trim())
+    }
+
+    $apiKey = ""
+    if ($EnvMap.ContainsKey("CHAT_API_KEY")) {
+        $apiKey = (($EnvMap["CHAT_API_KEY"] | Out-String).Trim())
+    }
+
+    if (-not $baseUrl -or -not $apiKey -or $apiKey -match "__REPLACE_WITH_REAL") {
+        return $null
+    }
+
+    $hasExplicitQuestion = -not [string]::IsNullOrWhiteSpace($Question)
+    $questionText = if ($hasExplicitQuestion) {
+        $Question
+    } else {
+        "请只总结这张图片里能明确看到的内容，控制在 3 到 6 条，不要猜测看不清的细节，也不要补充图片外的信息。"
+    }
+
+    $knowledgeText = if ($Knowledge) {
+        $Knowledge
+    } else {
+        "- 当前没有额外命中的知识片段，请只依据图片和问题中能确认的内容回答。"
+    }
+
+    $imageHint = if ($ImageName) {
+        "图片文件名：$ImageName"
+    } else {
+        "图片文件名：未提供"
+    }
+
+    $userPrompt = @"
+用户问题：$questionText
+$imageHint
+
+补充要求：
+1. 先提炼图片里能明确确认的关键信息。
+2. 如果图片信息不足、看不清或无法支持完整结论，要直接说明。
+3. 输出尽量简洁，优先给可用于后续问答的图片要点，不要写成长篇说明。
+4. 只能根据图片和已知事实回答，不要自己脑补。
+5. 如果用户没有明确提问，就只总结图片里能确认的内容，不要额外给方案、建议或推断。
+
+已知事实：
+$knowledgeText
+"@
+
+    $payloadObject = @{
+        model = "glm-4v-flash"
+        stream = $false
+        temperature = 0.1
+        messages = @(
+            @{
+                role = "system"
+                content = $SystemPrompt
+            },
+            @{
+                role = "user"
+                content = @(
+                    @{
+                        type = "text"
+                        text = $userPrompt
+                    },
+                    @{
+                        type = "image_url"
+                        image_url = @{
+                            url = $ImageDataUrl
+                        }
+                    }
+                )
+            }
+        )
+    }
+
+    $payload = $payloadObject | ConvertTo-Json -Depth 10
+    $payloadBytes = [System.Text.Encoding]::UTF8.GetBytes($payload)
+
+    try {
+        $chatUrl = $baseUrl.TrimEnd("/") + "/chat/completions"
+        $response = Invoke-RestMethod -Uri $chatUrl -Method Post -Headers @{
+            Authorization = "Bearer $apiKey"
+        } -ContentType "application/json; charset=utf-8" -Body $payloadBytes -TimeoutSec 90
+
+        $answer = $response.choices[0].message.content
+        if (-not $answer -or -not $answer.Trim() -or (Test-IsLowQualityAnswer -Text $answer)) {
+            return $null
+        }
+
+        return @{
+            answer = $answer
+            mode = "vision_model"
+        }
+    } catch {
+        return $null
+    }
+}
+
+function Invoke-DirectGroundedTextChat {
+    param(
+        [string]$Question,
+        [string]$SystemPrompt,
+        [string]$Knowledge,
+        [string]$ImageSummary,
+        [hashtable]$EnvMap,
+        [double]$Temperature = 0.1
+    )
+
+    $baseUrl = $EnvMap["OPENAI_BASE_URL"]
+    $apiKey = $EnvMap["CHAT_API_KEY"]
+
+    if (-not $baseUrl -or -not $apiKey -or $apiKey -match "__REPLACE_WITH_REAL") {
+        return $null
+    }
+
+    $imageSection = if ($ImageSummary) {
+        "图片识别要点：`n$ImageSummary`n"
+    } else {
+        ""
+    }
+
+    $knowledgeSection = if ($Knowledge) {
+        $Knowledge
+    } else {
+        "- 当前没有额外命中的知识事实。"
+    }
+
+    $userContent = "客户原话：$Question`n${imageSection}请直接回答，不要空泛寒暄。若用户一句话里问了多个点，请逐项覆盖。只能根据已知事实和图片识别要点回答，不要用行业常识补全缺失细节。若资料不足，请明确说目前能确认到哪里。`n已知事实：`n$knowledgeSection"
+
+    $payload = @{
+        model = "glm-4-flash-250414"
+        stream = $false
+        temperature = $Temperature
+        messages = @(
+            @{
+                role = "system"
+                content = $SystemPrompt
+            },
+            @{
+                role = "user"
+                content = $userContent
+            }
+        )
+    } | ConvertTo-Json -Depth 8
+
+    try {
+        $chatUrl = $baseUrl.TrimEnd("/") + "/chat/completions"
+        $response = Invoke-RestMethod -Uri $chatUrl -Method Post -Headers @{
+            Authorization = "Bearer $apiKey"
+        } -ContentType "application/json; charset=utf-8" -Body ([System.Text.Encoding]::UTF8.GetBytes($payload)) -TimeoutSec 60
+
+        $answer = $response.choices[0].message.content
+        if ($answer -and $answer.Trim() -and -not (Test-IsLowQualityAnswer -Text $answer)) {
+            return $answer
+        }
+    } catch {
+    }
+
+    return $null
+}
+
 function Get-ChatAnswer {
     param(
         [string]$Question,
+        [string]$ImageDataUrl,
+        [string]$ImageName,
         [string]$EnvFilePath,
         [object[]]$FaqEntries,
+        [object[]]$ImageCatalogEntries,
         [System.Collections.Generic.List[string]]$KnowledgeRecords,
-        [string]$PromptTemplateText
+        [string]$PromptTemplateText,
+        [string]$VisionPromptTemplateText
     )
 
     $mode = "fallback"
@@ -842,7 +1359,14 @@ function Get-ChatAnswer {
     $fastgptAttempted = $false
     $baseUrl = $envMap["OPENAI_BASE_URL"]
     $apiKey = $envMap["CHAT_API_KEY"]
-    $relevantFacts = Get-RelevantFacts -Question $Question -FaqEntries $FaqEntries -KnowledgeRecords $KnowledgeRecords -MaxFacts 6
+    $questionForRetrieval = if ($Question) {
+        $Question
+    } elseif ($ImageName) {
+        $ImageName
+    } else {
+        "图片咨询"
+    }
+    $relevantFacts = Get-RelevantFacts -Question $questionForRetrieval -FaqEntries $FaqEntries -KnowledgeRecords $KnowledgeRecords -MaxFacts 6
     $knowledge = if ($relevantFacts.Count -gt 0) {
         ($relevantFacts | ForEach-Object { "- $_" }) -join "`n"
     } else {
@@ -852,6 +1376,11 @@ function Get-ChatAnswer {
         $PromptTemplateText.Replace("{KNOWLEDGE_SNIPPETS}", $(if ($knowledge) { $knowledge } else { "- 当前未检索到足够相关的知识事实，优先追问澄清，不要直接大段介绍产品。" }))
     } else {
         "你是广西亿库光养硅藻环保科技有限公司的官网销售客服顾问。请优先回答用户实际问题，逐项覆盖并保持自然专业，只根据已知资料回答。`n已知事实：`n$knowledge"
+    }
+    $visionSystemPrompt = if ($VisionPromptTemplateText) {
+        $VisionPromptTemplateText.Replace("{KNOWLEDGE_SNIPPETS}", $(if ($knowledge) { $knowledge } else { "- 当前没有额外命中的知识片段，请优先依据图片和用户问题回答。" }))
+    } else {
+        "你是广西亿库官网销售客服顾问。请先识别图片中能确认的内容，再结合用户问题回答，只依据图片和已知事实作答。"
     }
     $businessGuardAnswer = Get-BusinessGuardAnswer -Question $Question
     $companyProfileAnswer = Get-CompanyProfileAnswer -Question $Question
@@ -868,6 +1397,47 @@ function Get-ChatAnswer {
     }
     $bestFaqAnswer = Get-BestFaqAnswer -Question $Question -FaqEntries $FaqEntries
     $chatMode = Get-DemoChatMode -EnvMap $envMap
+    $uploadedImageUrl = if (Test-HasImagePayload -ImageDataUrl $ImageDataUrl) {
+        Save-ImageDataUrlToPublicStorage -ImageDataUrl $ImageDataUrl -ImageName $ImageName
+    } else {
+        $null
+    }
+    $boardImageAnswer = Get-BoardImageAnswer -Question $Question -ImageCatalogEntries $ImageCatalogEntries
+
+    if ($boardImageAnswer) {
+        return New-ChatAnswerResult -Question $Question -Answer $boardImageAnswer -Mode "board_image_catalog"
+    }
+
+    if (Test-HasImagePayload -ImageDataUrl $ImageDataUrl) {
+        if ($chatBackendMode -in @("fastgpt", "fastgpt_prefer") -and $uploadedImageUrl) {
+            $fastgptVisionAnswer = Invoke-FastGPTAppChat -Question $Question -ImageUrl $uploadedImageUrl -EnvMap $envMap
+            if ($fastgptVisionAnswer) {
+                return New-ChatAnswerResult -Question $questionForRetrieval -Answer $fastgptVisionAnswer.answer -Mode $fastgptVisionAnswer.mode
+            }
+        }
+
+        $visionAnswer = Invoke-VisionModelChat -Question $Question -ImageDataUrl $ImageDataUrl -ImageName $ImageName -SystemPrompt $visionSystemPrompt -Knowledge $knowledge -EnvMap $envMap
+        if ($visionAnswer) {
+            $imageSummary = ($visionAnswer.answer | Out-String).Trim()
+
+            if (-not [string]::IsNullOrWhiteSpace($Question)) {
+                $fusionQuery = "$Question`n图片识别要点：$imageSummary"
+                $fusionFacts = Get-RelevantFacts -Question $fusionQuery -FaqEntries $FaqEntries -KnowledgeRecords $KnowledgeRecords -MaxFacts 8
+                $fusionKnowledge = if ($fusionFacts.Count -gt 0) {
+                    ($fusionFacts | ForEach-Object { "- $_" }) -join "`n"
+                } else {
+                    $knowledge
+                }
+
+                $fusionAnswer = Invoke-DirectGroundedTextChat -Question $Question -SystemPrompt $systemPrompt -Knowledge $fusionKnowledge -ImageSummary $imageSummary -EnvMap $envMap -Temperature 0.1
+                if ($fusionAnswer) {
+                    return New-ChatAnswerResult -Question $Question -Answer $fusionAnswer -Mode "vision_rag"
+                }
+            }
+
+            return New-ChatAnswerResult -Question $questionForRetrieval -Answer $imageSummary -Mode $visionAnswer.mode
+        }
+    }
 
     if ($businessGuardAnswer) {
         return New-ChatAnswerResult -Question $Question -Answer $businessGuardAnswer -Mode "business_guard"
@@ -918,47 +1488,26 @@ function Get-ChatAnswer {
     $allowFallback = $chatMode -ne "live_only"
 
     if ($allowLiveCall -and $apiKey -and $baseUrl -and $apiKey -notmatch "__REPLACE_WITH_REAL") {
-        try {
-            $chatUrl = $baseUrl.TrimEnd("/") + "/chat/completions"
-            $payload = @{
-                model = "glm-4-flash-250414"
-                stream = $false
-                temperature = 0.1
-                messages = @(
-                    @{
-                        role = "system"
-                        content = $systemPrompt
-                    },
-                    @{
-                        role = "user"
-                        content = "客户原话：$Question`n请直接回答，不要空泛寒暄。若用户一句话里问了多个点，请逐项覆盖。只能根据已知事实回答，不要用行业常识补全缺失细节。若资料不足，请明确说目前资料能确认到哪里。`n已知事实：`n$knowledge"
-                    }
-                )
-            } | ConvertTo-Json -Depth 8
-            $payloadBytes = [System.Text.Encoding]::UTF8.GetBytes($payload)
-
-            $response = Invoke-RestMethod -Uri $chatUrl -Method Post -Headers @{
-                Authorization = "Bearer $apiKey"
-            } -ContentType "application/json; charset=utf-8" -Body $payloadBytes -TimeoutSec 60
-
-            $candidate = $response.choices[0].message.content
-            if ($candidate -and $candidate.Trim() -and -not (Test-IsLowQualityAnswer -Text $candidate)) {
-                $answer = $candidate
-                $mode = if ($fastgptAttempted) { "live_model_fallback" } else { "live_model" }
-                if ($guidedAnswer -and (Test-AnswerNeedsGuidance -Question $Question -Answer $answer)) {
-                    $answer = $guidedAnswer
-                    $mode = "guided_answer"
-                }
+        $candidate = Invoke-DirectGroundedTextChat -Question $Question -SystemPrompt $systemPrompt -Knowledge $knowledge -ImageSummary "" -EnvMap $envMap -Temperature 0.1
+        if ($candidate) {
+            $answer = $candidate
+            $mode = if ($fastgptAttempted) { "live_model_fallback" } else { "live_model" }
+            if ($guidedAnswer -and (Test-AnswerNeedsGuidance -Question $Question -Answer $answer)) {
+                $answer = $guidedAnswer
+                $mode = "guided_answer"
             }
-        } catch {
-            $answer = $null
         }
     }
 
     if (-not $answer) {
         if ($allowFallback) {
-            $answer = Get-FallbackAnswer -Question $Question -FaqEntries $FaqEntries -KnowledgeRecords $KnowledgeRecords
-            $mode = "fallback"
+            if (Test-HasImagePayload -ImageDataUrl $ImageDataUrl) {
+                $answer = "我先看过这张图片了，但这次没有拿到稳定的识别结果。您可以换一张更清晰的图片，或者补一句更具体的问题，比如：这张图里的板材适合新房吗？这张截图里写的参数靠谱吗？"
+                $mode = "vision_unavailable"
+            } else {
+                $answer = Get-FallbackAnswer -Question $Question -FaqEntries $FaqEntries -KnowledgeRecords $KnowledgeRecords
+                $mode = "fallback"
+            }
         } else {
             $answer = "当前咨询通道稍忙，您可以稍后再试，或先留下联系方式，我们会尽快与您联系。"
             $mode = "live_unavailable"
@@ -1120,10 +1669,19 @@ $promptTemplateText = if ($resolvedPromptTemplate) {
 } else {
     ""
 }
+$resolvedVisionPromptTemplate = Resolve-Path -LiteralPath $VisionPromptTemplate -ErrorAction SilentlyContinue
+$visionPromptTemplateText = if ($resolvedVisionPromptTemplate) {
+    Get-TextFileContent -Path $resolvedVisionPromptTemplate.Path
+} else {
+    ""
+}
 $resolvedKnowledgeDir = Resolve-Path -LiteralPath $KnowledgeDir -ErrorAction SilentlyContinue
 $knowledgePath = if ($resolvedKnowledgeDir) { $resolvedKnowledgeDir.Path } else { $KnowledgeDir }
+$resolvedImageCatalogPath = Resolve-Path -LiteralPath $ImageCatalogPath -ErrorAction SilentlyContinue
+$imageCatalogResolvedPath = if ($resolvedImageCatalogPath) { $resolvedImageCatalogPath.Path } else { $ImageCatalogPath }
 $faqCsvPath = Resolve-FaqCsvPath -ConfiguredPath $FaqCsv
 $faqEntries = Get-FaqEntries -Path $faqCsvPath
+$imageCatalogEntries = Get-ImageCatalogEntries -Path $imageCatalogResolvedPath
 $knowledgeRecords = Get-KnowledgeRecords -Root $knowledgePath
 
 $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Parse("127.0.0.1"), $Port)
@@ -1149,7 +1707,9 @@ while ($true) {
         if ($method -eq "POST" -and $path -eq "/api/ai/chat") {
             $payload = if ($request.Body) { $request.Body | ConvertFrom-Json } else { $null }
             $question = if ($payload -and $payload.question) { [string]$payload.question } else { "" }
-            $chat = Get-ChatAnswer -Question $question -EnvFilePath $resolvedEnvFile -FaqEntries $faqEntries -KnowledgeRecords $knowledgeRecords -PromptTemplateText $promptTemplateText
+            $imageDataUrl = if ($payload -and $payload.imageDataUrl) { [string]$payload.imageDataUrl } else { "" }
+            $imageName = if ($payload -and $payload.imageName) { [string]$payload.imageName } else { "" }
+            $chat = Get-ChatAnswer -Question $question -ImageDataUrl $imageDataUrl -ImageName $imageName -EnvFilePath $resolvedEnvFile -FaqEntries $faqEntries -ImageCatalogEntries $imageCatalogEntries -KnowledgeRecords $knowledgeRecords -PromptTemplateText $promptTemplateText -VisionPromptTemplateText $visionPromptTemplateText
             $json = $chat | ConvertTo-Json -Depth 5
             Write-TextResponse -Stream $stream -StatusCode 200 -ContentType "application/json; charset=utf-8" -Text $json
             $client.Close()
@@ -1164,6 +1724,17 @@ while ($true) {
 
         if ($method -eq "POST" -and $path -eq "/api/ai/handoff") {
             Write-TextResponse -Stream $stream -StatusCode 200 -ContentType "application/json; charset=utf-8" -Text '{"status":"queued","message":"Handoff request has been queued."}'
+            $client.Close()
+            continue
+        }
+
+        if ($method -eq "GET" -and $path.StartsWith("/api/media?", [System.StringComparison]::OrdinalIgnoreCase)) {
+            $media = Get-ProxiedMediaResponse -RequestPath $path -EnvMap (Get-EnvMap -Path $resolvedEnvFile)
+            if ($media.ContainsKey("Bytes")) {
+                Write-BytesResponse -Stream $stream -StatusCode $media.StatusCode -ContentType $media.ContentType -BodyBytes $media.Bytes
+            } else {
+                Write-TextResponse -Stream $stream -StatusCode $media.StatusCode -ContentType $media.ContentType -Text $media.Text
+            }
             $client.Close()
             continue
         }

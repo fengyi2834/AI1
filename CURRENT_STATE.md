@@ -52,3 +52,4 @@ Move the project from a demo-style scripted retrieval flow to a real, testable F
 ## Known Risk
 
 If FastGPT is unstable, the web layer may still fall back to the direct model path. That protects usability, but it can hide RAG regressions unless we test both paths explicitly.
+- The current board sample/real-photo URLs use the local storage endpoint `http://192.168.77.97:9100/...`. That works for the current local/LAN demo, but external users will not be able to open those images until storage is exposed through a public domain or proxy.

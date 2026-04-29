@@ -120,3 +120,45 @@
 - Splitting public doc chunks by risk rules reduced the active reviewed chunk set from 118 rows to 82 rows, with 36 rows moved into a separate review-only file
 - `河南青丰.pdf` is currently a 2-page image-only PDF with zero extractable text via PyMuPDF, and there is no OCR engine installed locally, so it cannot be responsibly imported yet
 - Even after removing high-risk FAQ rows and deleting the stale coarse FAQ file collection, direct FastGPT generation can still infer unsupported answers from nearby context; this confirms that dataset cleanup alone is not enough and generation constraints still need tightening
+
+## 2026-04-28 Model and Vision Benchmark Findings
+
+- The current FastGPT customer-service chain is still text-only in practice: `web-demo/js/app.js` submits only `question` and `history`, while `scripts/demo-server.ps1` forwards only a text `messages` array to the FastGPT app endpoint
+- The published FastGPT app workflow already contains a `userFiles` output and a `fileUrlList` input path, but the chat node is explicitly configured with `aiChatVision=false`, so image understanding is not active in the current app version
+- FastGPT model metadata currently marks `glm-4-flash-250414` as `vision=false` and `reasoning=false`, while `glm-5` is registered as `vision=false` and `reasoning=true`
+- Direct FastGPT app benchmarking on 2026-04-28 showed the current `glm-4-flash-250414` path returning usable answers in about `2.82s`, `4.07s`, and `3.09s` for three representative customer-service questions
+- Repeating the same FastGPT workflow benchmark after switching only the chat model from `glm-4-flash-250414` to `glm-5` caused all three test requests to return empty answer content after about `8.35s`, `7.12s`, and `12.3s`
+- The practical conclusion for this project is that `glm-5` cannot currently replace the main FastGPT customer-service answer model without additional workflow or provider-adapter changes
+- Direct Zhipu image-understanding tests with the provided screenshot showed `glm-4v-flash` answering correctly in about `0.98s`, `glm-5v-turbo` answering correctly in about `7.44s`, and `glm-5` answering incorrectly (`gpt-4o`) after about `14.14s`
+- The practical multimodal conclusion is that if the website needs real user image chat, the image-capable candidates should come from the vision family such as `glm-4v-flash` or `glm-5v-turbo`, not the text-only `glm-5`
+- The current English system prompt and quote prompt are serviceable, but they are not ideal for a Chinese knowledge base plus Chinese customer-service workflow; the bigger blocker is still model and modality fit, not prompt language alone
+
+## 2026-04-28 Image Chat Implementation Findings
+
+- The safest near-term delivery path was not to rewire FastGPT internal vision workflow nodes immediately; it was to keep the published FastGPT text RAG path for normal questions and add a separate direct `glm-4v-flash` branch inside `scripts/demo-server.ps1` for image-bearing requests
+- The updated demo client now sends optional `imageDataUrl` and `imageName` fields to `/api/ai/chat`, which is enough for a workable local multimodal demo without introducing multipart form parsing into the custom PowerShell HTTP server
+- For screenshot-style visual questions, `glm-4v-flash` returned correct answers through the new demo-server path in about `3.07s`, which is fast enough for an interactive local customer-service demo
+- For image-only requests, the vision path is materially more stable when the default instruction is narrowed to visible-content summarization only; broad no-question prompts encourage extra inference even on the vision model
+- The published FastGPT app runtime now stores Chinese `quotePrompt` and `systemPrompt` values for the `gxChatNode`, so the configuration shown in the FastGPT admin UI is no longer English-only
+
+## 2026-04-28 Vision Workflow and Storage Findings
+
+- The local environment already has usable object storage for images: `fastgpt-minio` serves `fastgpt-public` and `fastgpt-private`, with `STORAGE_EXTERNAL_ENDPOINT=http://192.168.77.97:9100` and the FastGPT app itself using `STORAGE_S3_ENDPOINT=http://fastgpt-minio:9000`
+- Multi-megabyte image storage is practical in the current stack. The running `fastgpt-app` container reports `UPLOAD_FILE_MAX_SIZE=1000` and `UPLOAD_FILE_MAX_AMOUNT=1000`, so the practical bottleneck for a few-megabyte real photo is much more likely to be frontend upload time or user download time than FastGPT storage itself
+- FastGPT official OpenAPI supports multimodal chat through message content items like `image_url` and `file_url`, but it does not act as a raw binary file-upload endpoint; images must be uploaded to object storage first and then referenced by URL
+- The new helper script `scripts/upload_minio_public.py` successfully uploads local images into the existing public MinIO bucket, producing URLs that were confirmed reachable from both the host and the local FastGPT environment
+- The first attempt to switch the published FastGPT app workflow to `glm-4v-flash` failed with `404 The model glm-4v-flash does not exist or you do not have access to it`, even though the FastGPT workflow JSON and Mongo system-model metadata were correct
+- The real root cause was `fastgpt-aiproxy`: the active `channels.models` allowlist for `zhipu-local` did not include `glm-4v-flash`, so FastGPT could never route that model successfully until the allowlist was updated
+- After adding `glm-4v-flash` into the aiproxy channel model list and restarting `fastgpt-aiproxy` plus `fastgpt-app`, the direct FastGPT app endpoint began handling both text-only and image-bearing requests successfully
+- Measured latency after the visual FastGPT upgrade remained acceptable for direct app use in this environment: about `3.72s` for a text-only request and about `2.63s` for a screenshot-based image question
+- The richer two-stage `demo-server` image fusion path is slower because it performs extra work on purpose: local testing showed about `6.24s` for image + text fusion and about `4.92s` for image-only summarization
+
+## 2026-04-28 Board Image Catalog Findings
+
+- The folder `C:\Users\Administrator\Desktop\AI1\tu` contained four real board-photo assets: `背景墙.jpg`, `菜板.jpg`, `防火板.jpg`, and `隔音板.jpg`, each roughly `3.5MB` to `4.3MB`
+- All four images were successfully uploaded into the existing public MinIO bucket and indexed in `data/image_catalog/board_images.json`
+- A deterministic local image-answer branch is better than asking the model to decide which sample photo to send each time; it is faster, avoids hallucinated image references, and can return the exact stored URL reliably
+- The new image branch now handles both specific and generic user intents:
+- specific requests such as `防火板样板图` or `隔音板照片` return the single matching image
+- generic requests such as `想看样板图` or `把四种板的实拍图都发我看看` return all four indexed images
+- The returned image URLs currently use the local storage endpoint `http://192.168.77.97:9100/...`, which is suitable for the current local/LAN demo but will not be reachable to users outside that network unless a public domain or proxy is added later

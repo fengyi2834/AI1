@@ -5,8 +5,7 @@
 Use this as the default restart prompt:
 
 ```text
-先读 PROJECT_INDEX.md、CURRENT_STATE.md、DECISIONS.md、NEXT_ACTION.md，
-再按当前任务需要决定是否继续读 task_plan.md / findings.md / progress.md。
+先读 AGENT.md、PROJECT_INDEX.md、CURRENT_STATE.md、DECISIONS.md、NEXT_ACTION.md，再按当前任务需要决定是否继续读 task_plan.md / findings.md / progress.md。
 ```
 
 ## Immediate Engineering Tasks

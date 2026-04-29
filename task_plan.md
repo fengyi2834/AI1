@@ -18,6 +18,10 @@ Move the current website AI customer service flow from a demo-style scripted ret
 | 8 | complete | Produce refreshed deliverables and review notes for the latest source set under `C:\Users\Administrator\Desktop\资料` |
 | 9 | complete | Refine the full 71-row FAQ set into more natural customer-service wording, then republish and verify |
 | 10 | complete | Replace raw FAQ/doc imports with audited keep/safe versions and verify residual model risk |
+| 11 | complete | Add a local image-chat path with `glm-4v-flash` and switch the active customer-service prompts from English to Chinese |
+| 12 | complete | Enable FastGPT-side visual workflow plus object-storage-backed image URLs, then verify text and image chat behavior |
+| 13 | complete | Add the four local board sample photos into an image catalog and make the customer-service flow return matching sample/real-photo images on request |
+| 14 | complete | Create a root `AGENT.md` handoff guide so new conversations can recover project background quickly |
 
 ## Decisions
 

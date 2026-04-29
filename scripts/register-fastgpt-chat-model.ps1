@@ -1,5 +1,11 @@
 param(
     [string]$ModelId = "glm-4-flash-250414",
+    [bool]$Vision = $false,
+    [bool]$Reasoning = $false,
+    [int]$MaxContext = 128000,
+    [int]$MaxTokens = 4096,
+    [int]$QuoteMaxToken = 32000,
+    [int]$MaxResponse = 4096,
     [string]$MongoContainer = "fastgpt-mongo",
     [string]$MongoUser = "myusername",
     [string]$MongoPassword = "mypassword"
@@ -32,6 +38,12 @@ if (-not (Test-Path -LiteralPath (Split-Path -Parent $tmpJs))) {
 
 $js = @'
 const modelId = '__MODEL_ID__';
+const vision = __VISION__;
+const reasoning = __REASONING__;
+const maxContext = __MAX_CONTEXT__;
+const maxTokens = __MAX_TOKENS__;
+const quoteMaxToken = __QUOTE_MAX_TOKENS__;
+const maxResponse = __MAX_RESPONSE__;
 const exists = db.system_models.findOne({ model: modelId });
 if (!exists) {
   db.system_models.insertOne({
@@ -41,17 +53,17 @@ if (!exists) {
       model: modelId,
       name: modelId,
       type: 'llm',
-      maxContext: 128000,
-      maxTokens: 4096,
-      quoteMaxToken: 32000,
+      maxContext,
+      maxTokens,
+      quoteMaxToken,
       maxTemperature: 1,
       showTopP: true,
       responseFormatList: ['text', 'json_object'],
       showStopSign: true,
-      vision: false,
-      reasoning: false,
+      vision,
+      reasoning,
       toolChoice: true,
-      maxResponse: 4096,
+      maxResponse,
       isActive: true
     }
   });
@@ -65,17 +77,17 @@ if (!exists) {
         'metadata.model': modelId,
         'metadata.name': modelId,
         'metadata.type': 'llm',
-        'metadata.maxContext': 128000,
-        'metadata.maxTokens': 4096,
-        'metadata.quoteMaxToken': 32000,
+        'metadata.maxContext': maxContext,
+        'metadata.maxTokens': maxTokens,
+        'metadata.quoteMaxToken': quoteMaxToken,
         'metadata.maxTemperature': 1,
         'metadata.showTopP': true,
         'metadata.responseFormatList': ['text', 'json_object'],
         'metadata.showStopSign': true,
-        'metadata.vision': false,
-        'metadata.reasoning': false,
+        'metadata.vision': vision,
+        'metadata.reasoning': reasoning,
         'metadata.toolChoice': true,
-        'metadata.maxResponse': 4096,
+        'metadata.maxResponse': maxResponse,
         'metadata.isActive': true
       }
     }
@@ -85,6 +97,12 @@ if (!exists) {
 '@
 
 $js = $js.Replace('__MODEL_ID__', $ModelId)
+$js = $js.Replace('__VISION__', $Vision.ToString().ToLowerInvariant())
+$js = $js.Replace('__REASONING__', $Reasoning.ToString().ToLowerInvariant())
+$js = $js.Replace('__MAX_CONTEXT__', $MaxContext.ToString())
+$js = $js.Replace('__MAX_TOKENS__', $MaxTokens.ToString())
+$js = $js.Replace('__QUOTE_MAX_TOKENS__', $QuoteMaxToken.ToString())
+$js = $js.Replace('__MAX_RESPONSE__', $MaxResponse.ToString())
 $js | Set-Content -LiteralPath $tmpJs -Encoding UTF8
 
 try {

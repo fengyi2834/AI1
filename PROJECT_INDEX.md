@@ -4,10 +4,11 @@
 
 For a new session, read files in this order:
 
-1. `PROJECT_INDEX.md`
-2. `CURRENT_STATE.md`
-3. `DECISIONS.md`
-4. `NEXT_ACTION.md`
+1. `AGENT.md`
+2. `PROJECT_INDEX.md`
+3. `CURRENT_STATE.md`
+4. `DECISIONS.md`
+5. `NEXT_ACTION.md`
 
 Only read `task_plan.md`, `findings.md`, and `progress.md` when continuing the current FastGPT/RAG implementation in detail.
 
