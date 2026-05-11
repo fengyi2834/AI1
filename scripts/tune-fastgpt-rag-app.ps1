@@ -5,12 +5,36 @@ param(
     [string]$AnswerModel = "glm-4-flash-250414",
     [bool]$EnableVision = $false,
     [bool]$EnableImageUpload = $false,
+    [string]$SystemPromptPath = ".\config\fastgpt\prompts\demo_live_system_prompt.md",
+    [string]$QuotePromptPath = ".\config\fastgpt\prompts\fastgpt_quote_prompt.md",
     [string]$MongoContainer = "fastgpt-mongo",
     [string]$MongoUser = "myusername",
     [string]$MongoPassword = "mypassword"
 )
 
 $ErrorActionPreference = "Stop"
+
+function Get-TextFileContent {
+    param(
+        [string]$Path,
+        [string]$Default = ""
+    )
+
+    $resolved = Resolve-Path -LiteralPath $Path -ErrorAction SilentlyContinue
+    if (-not $resolved) {
+        return $Default
+    }
+
+    return Get-Content -LiteralPath $resolved.Path -Raw -Encoding UTF8
+}
+
+function Convert-ToJavaScriptStringLiteral {
+    param([string]$Text)
+
+    $value = if ($Text) { $Text } else { "" }
+    $escaped = $value.Replace("\", "\\").Replace("'", "\'").Replace("`r", "\r").Replace("`n", "\n")
+    return "'" + $escaped + "'"
+}
 
 function Invoke-MongoScriptFile {
     param(
@@ -34,6 +58,9 @@ $tmpJs = Join-Path $PWD "tmp\\fastgpt_tune_rag_app.js"
 if (-not (Test-Path -LiteralPath (Split-Path -Parent $tmpJs))) {
     New-Item -ItemType Directory -Path (Split-Path -Parent $tmpJs) -Force | Out-Null
 }
+
+$systemPromptJs = Convert-ToJavaScriptStringLiteral -Text (Get-TextFileContent -Path $SystemPromptPath -Default "You are a salesperson-style AI assistant for diatom mud boards. Answer directly and do not copy knowledge snippets verbatim.")
+$quotePromptJs = Convert-ToJavaScriptStringLiteral -Text (Get-TextFileContent -Path $QuotePromptPath -Default "Known facts:`n{{quote}}`n`nUser question:`n{{question}}`n`nAnswer naturally like a real sales consultant and do not quote the source text verbatim.")
 
 $js = @'
 const appId = ObjectId('__APP_ID__');
@@ -120,13 +147,13 @@ const nodes = [
     version: '4.9.7',
     inputs: [
       { key: 'model', renderTypeList: ['settingLLMModel', 'reference'], label: '', valueType: 'string', value: answerModel },
-      { key: 'temperature', renderTypeList: ['hidden'], label: '', value: 0.18, valueType: 'number' },
-      { key: 'maxToken', renderTypeList: ['hidden'], label: '', value: 320, valueType: 'number' },
+      { key: 'temperature', renderTypeList: ['hidden'], label: '', value: 0.22, valueType: 'number' },
+      { key: 'maxToken', renderTypeList: ['hidden'], label: '', value: 220, valueType: 'number' },
       { key: 'isResponseAnswerText', renderTypeList: ['hidden'], label: '', value: true, valueType: 'boolean' },
       { key: 'aiChatQuoteRole', renderTypeList: ['hidden'], label: '', valueType: 'string', value: 'system' },
       { key: 'quoteTemplate', renderTypeList: ['hidden'], label: '', valueType: 'string', value: '{instruction:"{{q}}",output:"{{a}}",source:"{{source}}"}' },
-      { key: 'quotePrompt', renderTypeList: ['hidden'], label: '', valueType: 'string', value: '\u5df2\u77e5\u8d44\u6599\uff1a\n{{quote}}\n\n\u7528\u6237\u95ee\u9898\uff1a{{question}}\n\n\u56de\u7b54\u8981\u6c42\uff1a\n1. \u5168\u7a0b\u4f7f\u7528\u7b80\u4f53\u4e2d\u6587\u3002\n2. \u5148\u76f4\u63a5\u56de\u7b54\u7528\u6237\u6700\u5173\u5fc3\u7684\u95ee\u9898\uff0c\u518d\u8865 2 \u5230 4 \u4e2a\u6700\u6709\u4ef7\u503c\u7684\u4e8b\u5b9e\u3002\n3. \u8bed\u6c14\u50cf\u61c2\u4ea7\u54c1\u7684\u9500\u552e\u987e\u95ee\uff0c\u81ea\u7136\u3001\u4e13\u4e1a\u3001\u514b\u5236\uff0c\u4e0d\u8981\u50cf\u8bf4\u660e\u4e66\u3002\n4. \u53ea\u80fd\u4f7f\u7528\u5df2\u77e5\u8d44\u6599\uff0c\u4e0d\u8981\u81ea\u884c\u8865\u5168\u672a\u63d0\u4f9b\u7684\u4e8b\u5b9e\u3002\n5. \u5982\u679c\u8d44\u6599\u53ea\u652f\u6301\u90e8\u5206\u7ed3\u8bba\uff0c\u8981\u660e\u786e\u8bf4\u201c\u76ee\u524d\u8d44\u6599\u80fd\u786e\u8ba4\u5230\u8fd9\u91cc\u201d\u3002\n6. \u5982\u679c\u95ee\u9898\u6d89\u53ca\u65b0\u623f\u3001\u6c14\u5473\u3001\u73af\u4fdd\u3001\u6548\u679c\u7b49\u987e\u8651\uff0c\u53ef\u4ee5\u5148\u7528\u4e00\u53e5\u7b80\u77ed\u5171\u60c5\uff0c\u4f46\u4e0d\u8981\u8fc7\u5ea6\u3002' },
-      { key: 'systemPrompt', renderTypeList: ['textarea', 'reference'], max: 3000, valueType: 'string', label: 'System Prompt', description: 'RAG customer service prompt', placeholder: 'System prompt', value: '\u4f60\u662f\u201c\u5e7f\u897f\u4ebf\u5e93\u5149\u517b\u7845\u85fb\u73af\u4fdd\u79d1\u6280\u6709\u9650\u516c\u53f8\u201d\u7684\u5b98\u7f51\u9500\u552e\u5ba2\u670d\u987e\u95ee\uff0c\u4e0d\u662f\u901a\u7528\u52a9\u624b\u3002\u5168\u7a0b\u7528\u7b80\u4f53\u4e2d\u6587\u3002\u56de\u7b54\u65f6\u5148\u7ed9\u7ed3\u8bba\uff0c\u518d\u8865\u6700\u5173\u952e\u7684\u4f9d\u636e\uff0c\u8bed\u6c14\u81ea\u7136\u3001\u4e13\u4e1a\u3001\u514b\u5236\uff0c\u50cf\u771f\u5b9e\u987e\u95ee\uff0c\u4e0d\u50cf\u516c\u544a\u6216\u8bf4\u660e\u4e66\u3002\u53ea\u80fd\u4f9d\u636e\u63d0\u4f9b\u7684\u77e5\u8bc6\u56de\u7b54\uff0c\u4e0d\u8981\u8865\u884c\u4e1a\u5e38\u8bc6\u3002\u4e0d\u8981\u7f16\u9020\u4ef7\u683c\u3001\u5408\u540c\u6761\u6b3e\u3001\u65bd\u5de5\u5468\u671f\u3001\u68c0\u6d4b\u7ed3\u8bba\u3001\u5408\u4f5c\u653f\u7b56\u3001\u7edd\u5bf9\u6548\u679c\u6216\u672a\u786e\u8ba4\u53c2\u6570\u3002\u82e5\u77e5\u8bc6\u53ea\u80fd\u652f\u6301\u90e8\u5206\u7b54\u6848\uff0c\u5c31\u5148\u8bf4\u5df2\u786e\u8ba4\u7684\u90e8\u5206\uff0c\u518d\u660e\u786e\u54ea\u4e9b\u7ec6\u8282\u4ecd\u9700\u4eba\u5de5\u786e\u8ba4\u3002\u82e5\u7528\u6237\u4e00\u53e5\u8bdd\u95ee\u4e86\u591a\u4e2a\u70b9\uff0c\u8981\u5c3d\u91cf\u9010\u9879\u8986\u76d6\u3002' },
+      { key: 'quotePrompt', renderTypeList: ['hidden'], label: '', valueType: 'string', value: __QUOTE_PROMPT__ },
+      { key: 'systemPrompt', renderTypeList: ['textarea', 'reference'], max: 3000, valueType: 'string', label: 'System Prompt', description: 'RAG customer service prompt', placeholder: 'System prompt', value: __SYSTEM_PROMPT__ },
       { key: 'history', renderTypeList: ['numberInput', 'reference'], valueType: 'chatHistory', label: 'Chat History', required: true, min: 0, max: 30, value: 4 },
       { key: 'quoteQA', renderTypeList: ['settingDatasetQuotePrompt'], label: '', debugLabel: 'Dataset Quote', description: '', valueType: 'datasetQuote', value: [[datasetNodeId, 'quoteQA']] },
       { key: 'fileUrlList', renderTypeList: ['reference', 'input'], label: 'User Files', debugLabel: 'User Files', valueType: 'arrayString', value: [[startId, 'userFiles']] },
@@ -183,6 +210,8 @@ $js = $js.Replace('__DATASET_ID__', $DatasetId)
 $js = $js.Replace('__ANSWER_MODEL__', $AnswerModel)
 $js = $js.Replace('__ENABLE_VISION__', $EnableVision.ToString().ToLowerInvariant())
 $js = $js.Replace('__ENABLE_IMAGE_UPLOAD__', $EnableImageUpload.ToString().ToLowerInvariant())
+$js = $js.Replace('__SYSTEM_PROMPT__', $systemPromptJs)
+$js = $js.Replace('__QUOTE_PROMPT__', $quotePromptJs)
 
 $js | Set-Content -LiteralPath $tmpJs -Encoding UTF8
 

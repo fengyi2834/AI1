@@ -3,59 +3,67 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>广西亿库官网在线咨询</title>
+    <title>亿库客服中心</title>
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <main class="shell">
-      <section class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">广西亿库光养硅藻板</p>
-          <h1>在线咨询</h1>
-          <p class="lead">
-            这套演示客服现在同时支持文字咨询和图片咨询。用户可以直接发产品图、现场图、安装细节图，或者把聊天截图、参数截图一起发过来，再配一句问题，我们会按官网客服的口径来回答。
-          </p>
-          <div class="hero-points" aria-label="咨询亮点">
-            <span>支持发图咨询</span>
-            <span>文本问答保持可用</span>
-            <span>复杂问题可转接顾问</span>
-          </div>
-        </div>
-
-        <aside class="hero-side">
-          <div class="hero-info">
-            <button type="button" class="info-trigger" aria-label="查看服务说明">i</button>
-            <div class="info-tooltip" role="note">
-              <strong>服务说明</strong>
-              <p>当前页面用于演示官网客服的咨询接待流程，包含在线问答、图片识别、留资和顾问转接。</p>
-              <p>适合现场演示的问法包括：这张图是什么材料、这块板适不适合新房、这张截图里写了什么、这个场景适不适合使用。</p>
-            </div>
-          </div>
-        </aside>
-      </section>
-
+    <main class="shell shell-chat">
       <section class="layout">
         <section class="panel chat-panel" aria-labelledby="chatTitle">
-          <header class="panel-head">
-            <div>
-              <p class="section-kicker">在线咨询</p>
-              <h2 id="chatTitle">让客户直接发问题，也可以顺手发图</h2>
-              <p>建议从“这张图里的板材适合新房吗”“这张参数截图靠谱吗”“这块材料能解决什么问题”这类问题开始，更容易看出真实客服体验。</p>
+          <header class="chat-topbar">
+            <div class="chat-topbar-main">
+              <button
+                type="button"
+                id="stealthTrigger"
+                class="chat-brand stealth-trigger"
+                aria-label="打开隐藏设置"
+              >
+                广西亿库硅藻板
+              </button>
+              <h2 id="chatTitle">亿库客服中心</h2>
+            </div>
+            <div class="chat-topbar-status" aria-label="当前状态">
+              <span class="status-dot"></span>
+              <span>支持发图</span>
             </div>
           </header>
+
+          <section id="stealthPanel" class="stealth-panel is-hidden" aria-label="隐藏模型设置">
+            <div class="stealth-panel-head">
+              <strong>模型实验开关</strong>
+              <button type="button" id="stealthClose" class="stealth-close" aria-label="关闭隐藏设置">×</button>
+            </div>
+            <p class="stealth-copy">只影响当前浏览器本地会话，默认仍然是 `glm-4-flash-250414`。</p>
+            <div class="stealth-actions" role="group" aria-label="选择模型">
+              <button type="button" class="stealth-option" data-model="glm-4-flash-250414">默认模型</button>
+              <button type="button" class="stealth-option" data-model="glm-5">切到 glm-5</button>
+            </div>
+            <p id="stealthState" class="stealth-state">当前：默认模型</p>
+          </section>
 
           <div class="quick-actions" aria-label="快捷问题">
             <button type="button" class="quick-question">介绍一下你们这个产品</button>
             <button type="button" class="quick-question">这块板材适合新房用吗？</button>
-            <button type="button" class="quick-question">把这张图帮我看看，适合家装吗？</button>
-            <button type="button" class="quick-question">如果是门店合作，应该怎么选方案？</button>
+            <button type="button" class="quick-question">最近准备装修，旁边车流大，卧室午睡总被吵醒，有没有板推荐？</button>
+            <button type="button" class="quick-question">把这张图帮我看看，适不适合家装？</button>
           </div>
+
+          <section class="admin-strip" aria-label="管理员链路状态">
+            <div class="admin-strip-copy">
+              <p class="admin-kicker">Admin</p>
+              <div>
+                <strong>当前链路状态</strong>
+                <p>这里会显示当前前端连接的聊天后端和运行状态。</p>
+              </div>
+            </div>
+            <p class="admin-runtime-note" id="adminRuntimeNote">正在读取当前状态…</p>
+          </section>
 
           <div class="chat">
             <div id="chatLog" class="chat-log" aria-live="polite"></div>
             <form id="chatForm" class="chat-form">
               <div class="chat-tools">
-                <span class="tool-hint">支持图片咨询</span>
+                <span class="tool-hint">可直接发文字，也可以顺手发图</span>
                 <label class="upload-chip" for="imageInput" aria-label="上传图片">+</label>
                 <input id="imageInput" class="sr-only" type="file" accept="image/png,image/jpeg,image/webp" />
               </div>
@@ -74,15 +82,14 @@
                 <input
                   id="chatInput"
                   type="text"
-                  placeholder="例如：这张图里的板材适合新房吗？也可以只发图片。"
+                  placeholder="比如：适合儿童房吗？也可以只发一张图让我帮你看"
                   autocomplete="off"
                 />
-                <button type="submit">发送咨询</button>
+                <button type="submit">发送</button>
               </div>
             </form>
           </div>
         </section>
-
       </section>
     </main>
     <script src="js/app.js"></script>
