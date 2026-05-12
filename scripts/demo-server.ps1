@@ -65,7 +65,8 @@ function Get-EnvValue {
 function Get-AllowedDirectTextModels {
     return @(
         "glm-4-flash-250414",
-        "glm-5"
+        "glm-5",
+        "deepseek-v4-flash"
     )
 }
 
@@ -80,13 +81,95 @@ function Get-DirectTextModel {
         return $candidate
     }
 
-    return Get-EnvValue -EnvMap $EnvMap -Key "DEMO_TEXT_MODEL" -Default "glm-4-flash-250414"
+    return Get-EnvValue -EnvMap $EnvMap -Key "DEMO_TEXT_MODEL" -Default "deepseek-v4-flash"
 }
 
 function Get-VisionModel {
     param([hashtable]$EnvMap)
 
     return Get-EnvValue -EnvMap $EnvMap -Key "DEMO_VISION_MODEL" -Default "glm-4v-flash"
+}
+
+function Get-ImageFlowTextModel {
+    param([hashtable]$EnvMap)
+
+    return Get-EnvValue -EnvMap $EnvMap -Key "DEMO_IMAGE_TEXT_MODEL" -Default "glm-4-flash-250414"
+}
+
+function Get-DirectTextProviderConfig {
+    param(
+        [hashtable]$EnvMap,
+        [string]$Override = ""
+    )
+
+    $model = Get-DirectTextModel -EnvMap $EnvMap -Override $Override
+    if ($model -eq "deepseek-v4-flash") {
+        $baseUrl = Get-EnvValue -EnvMap $EnvMap -Key "DEEPSEEK_BASE_URL" -Default "https://api.deepseek.com"
+        $apiKey = Get-EnvValue -EnvMap $EnvMap -Key "DEEPSEEK_API_KEY" -Default ""
+        return @{
+            model = $model
+            base_url = $baseUrl
+            api_key = $apiKey
+            provider = "deepseek"
+        }
+    }
+
+    return @{
+        model = $model
+        base_url = Get-EnvValue -EnvMap $EnvMap -Key "OPENAI_BASE_URL" -Default ""
+        api_key = Get-EnvValue -EnvMap $EnvMap -Key "CHAT_API_KEY" -Default ""
+        provider = "default"
+    }
+}
+
+function Invoke-JsonApiRequest {
+    param(
+        [string]$Uri,
+        [hashtable]$Headers,
+        [byte[]]$BodyBytes,
+        [int]$TimeoutSec = 60,
+        [string]$EncodingName = "utf-8"
+    )
+
+    $request = [System.Net.HttpWebRequest]::Create($Uri)
+    $request.Method = "POST"
+    $request.ContentType = "application/json; charset=utf-8"
+    $request.Timeout = $TimeoutSec * 1000
+    $request.ReadWriteTimeout = $TimeoutSec * 1000
+
+    foreach ($key in @($Headers.Keys)) {
+        $request.Headers[$key] = [string]$Headers[$key]
+    }
+
+    $requestStream = $request.GetRequestStream()
+    try {
+        $requestStream.Write($BodyBytes, 0, $BodyBytes.Length)
+    } finally {
+        $requestStream.Dispose()
+    }
+
+    $response = $null
+    try {
+        $response = $request.GetResponse()
+        $responseStream = $response.GetResponseStream()
+        $memory = New-Object System.IO.MemoryStream
+        try {
+            $responseStream.CopyTo($memory)
+            $bytes = $memory.ToArray()
+            $encoding = [System.Text.Encoding]::GetEncoding($EncodingName)
+            $text = $encoding.GetString($bytes)
+            return ($text | ConvertFrom-Json)
+        } finally {
+            $memory.Dispose()
+            if ($responseStream) {
+                $responseStream.Dispose()
+            }
+        }
+    } finally {
+        if ($response) {
+            $response.Dispose()
+        }
+    }
 }
 
 function Get-TextFileContent {
@@ -429,6 +512,7 @@ function Get-AdminRuntimeConfigResponse {
         online_only = $true
         chat_backend = Get-ChatBackendMode -EnvMap $EnvMap
         guided_answer_enabled = Test-GuidedAnswerEnabled -EnvMap $EnvMap
+        deepseek_text_enabled = [bool](Get-EnvValue -EnvMap $EnvMap -Key "DEEPSEEK_API_KEY" -Default "")
         updated_at = ""
     }
 }
@@ -2568,9 +2652,9 @@ $knowledgeText
 
     try {
         $chatUrl = $baseUrl.TrimEnd("/") + "/chat/completions"
-        $response = Invoke-RestMethod -Uri $chatUrl -Method Post -Headers @{
+        $response = Invoke-JsonApiRequest -Uri $chatUrl -Headers @{
             Authorization = "Bearer $apiKey"
-        } -ContentType "application/json; charset=utf-8" -Body $payloadBytes -TimeoutSec 90
+        } -BodyBytes $payloadBytes -TimeoutSec 90
 
         $answer = $response.choices[0].message.content
         if (-not $answer -or -not $answer.Trim() -or (Test-IsLowQualityAnswer -Text $answer)) {
@@ -2599,8 +2683,9 @@ function Invoke-DirectGroundedTextChat {
         [double]$Temperature = 0.1
     )
 
-    $baseUrl = $EnvMap["OPENAI_BASE_URL"]
-    $apiKey = $EnvMap["CHAT_API_KEY"]
+    $providerConfig = Get-DirectTextProviderConfig -EnvMap $EnvMap -Override $DirectTextModel
+    $baseUrl = $providerConfig.base_url
+    $apiKey = $providerConfig.api_key
 
     if (-not $baseUrl -or -not $apiKey -or $apiKey -match "__REPLACE_WITH_REAL") {
         return $null
@@ -2608,8 +2693,8 @@ function Invoke-DirectGroundedTextChat {
 
     $userContent = Build-GroundedUserPrompt -Question $Question -ContextBundleText $ContextBundleText -KnowledgeText $Knowledge -RagPromptTemplateText $RagPromptTemplateText -ImageSummary $ImageSummary
 
-    $payload = @{
-        model = Get-DirectTextModel -EnvMap $EnvMap -Override $DirectTextModel
+    $payloadMap = [ordered]@{
+        model = $providerConfig.model
         stream = $false
         temperature = $Temperature
         messages = @(
@@ -2622,13 +2707,19 @@ function Invoke-DirectGroundedTextChat {
                 content = $userContent
             }
         )
-    } | ConvertTo-Json -Depth 8
+    }
+    if ($providerConfig.provider -eq "deepseek") {
+        $payloadMap["thinking"] = @{
+            type = "disabled"
+        }
+    }
+    $payload = $payloadMap | ConvertTo-Json -Depth 8
 
     try {
         $chatUrl = $baseUrl.TrimEnd("/") + "/chat/completions"
-        $response = Invoke-RestMethod -Uri $chatUrl -Method Post -Headers @{
+        $response = Invoke-JsonApiRequest -Uri $chatUrl -Headers @{
             Authorization = "Bearer $apiKey"
-        } -ContentType "application/json; charset=utf-8" -Body ([System.Text.Encoding]::UTF8.GetBytes($payload)) -TimeoutSec 60
+        } -BodyBytes ([System.Text.Encoding]::UTF8.GetBytes($payload)) -TimeoutSec 60
 
         $answer = $response.choices[0].message.content
         if ($answer -and $answer.Trim() -and -not (Test-IsLowQualityAnswer -Text $answer)) {
@@ -2843,7 +2934,7 @@ function Get-ChatAnswer {
                     $knowledge
                 }
 
-                $fusionAnswer = Invoke-DirectGroundedTextChat -Question $Question -SystemPrompt $systemPrompt -Knowledge $fusionKnowledge -ImageSummary $imageSummary -EnvMap $envMap -ContextBundleText $modelContextText -RagPromptTemplateText $RagPromptTemplateText -DirectTextModel $ModelOverride -Temperature 0.18
+                $fusionAnswer = Invoke-DirectGroundedTextChat -Question $Question -SystemPrompt $systemPrompt -Knowledge $fusionKnowledge -ImageSummary $imageSummary -EnvMap $envMap -ContextBundleText $modelContextText -RagPromptTemplateText $RagPromptTemplateText -DirectTextModel (Get-ImageFlowTextModel -EnvMap $envMap) -Temperature 0.18
                 if ($fusionAnswer) {
                     $result = New-ChatAnswerResult -Question $Question -Answer $fusionAnswer -Mode "vision_rag"
                     return Finalize-ChatResult -Channel $channelName -ExternalUserId $externalId -ConversationId $conversationIdValue -SessionId $sessionIdValue -Question $Question -HasImage $hasImage -RawResult $result -UserProfile $userProfile -ConversationState $conversationState

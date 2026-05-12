@@ -33,10 +33,11 @@
               <strong>模型实验开关</strong>
               <button type="button" id="stealthClose" class="stealth-close" aria-label="关闭隐藏设置">×</button>
             </div>
-            <p class="stealth-copy">只影响当前浏览器本地会话，默认仍然是 `glm-4-flash-250414`。</p>
+            <p class="stealth-copy">只影响当前浏览器本地会话，默认文本模型是 `deepseek-v4-flash`。图片仍然继续走智谱，多模态不切到 DeepSeek。</p>
             <div class="stealth-actions" role="group" aria-label="选择模型">
-              <button type="button" class="stealth-option" data-model="glm-4-flash-250414">默认模型</button>
+              <button type="button" class="stealth-option" data-model="deepseek-v4-flash">默认模型</button>
               <button type="button" class="stealth-option" data-model="glm-5">切到 glm-5</button>
+              <button type="button" class="stealth-option" data-model="glm-4-flash-250414">切到智谱文本</button>
             </div>
             <p id="stealthState" class="stealth-state">当前：默认模型</p>
           </section>

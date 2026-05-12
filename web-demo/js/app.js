@@ -10,8 +10,9 @@ const MODEL_STORAGE_KEY = "gx_yiku_demo_direct_model_override";
 const HISTORY_LIMIT = 12;
 const IMAGE_MARKDOWN_RE = /!\[([^\]]*)\]\(((?:https?:\/\/|\/)[^\s)]+)\)/g;
 
-const MODEL_DEFAULT = "glm-4-flash-250414";
+const MODEL_DEFAULT = "deepseek-v4-flash";
 const MODEL_EXPERIMENT = "glm-5";
+const MODEL_ZHIPU_TEXT = "glm-4-flash-250414";
 const STEALTH_TAP_COUNT = 5;
 const STEALTH_TAP_WINDOW_MS = 2200;
 
@@ -37,6 +38,7 @@ const stealthOptions = document.querySelectorAll(".stealth-option");
 let pendingImage = null;
 let chatHistory = [];
 let stealthTapTimes = [];
+let adminRuntimeConfig = null;
 
 const externalUserId = getOrCreateId(localStorage, USER_STORAGE_KEY, "web-user");
 const conversationId = getOrCreateId(sessionStorage, CONVERSATION_STORAGE_KEY, "web-conv");
@@ -73,14 +75,18 @@ function normalizeText(text = "") {
 function getSelectedModel() {
   try {
     const current = localStorage.getItem(MODEL_STORAGE_KEY);
-    return current === MODEL_EXPERIMENT ? MODEL_EXPERIMENT : MODEL_DEFAULT;
+    return [MODEL_EXPERIMENT, MODEL_ZHIPU_TEXT].includes(current)
+      ? current
+      : MODEL_DEFAULT;
   } catch {
     return MODEL_DEFAULT;
   }
 }
 
 function setSelectedModel(model) {
-  const next = model === MODEL_EXPERIMENT ? MODEL_EXPERIMENT : MODEL_DEFAULT;
+  const next = [MODEL_EXPERIMENT, MODEL_ZHIPU_TEXT].includes(model)
+    ? model
+    : MODEL_DEFAULT;
   try {
     if (next === MODEL_DEFAULT) {
       localStorage.removeItem(MODEL_STORAGE_KEY);
@@ -94,13 +100,24 @@ function setSelectedModel(model) {
 }
 
 function getModelLabel(model) {
-  return model === MODEL_EXPERIMENT ? "glm-5（实验）" : "glm-4-flash-250414（默认）";
+  if (model === MODEL_EXPERIMENT) {
+    return "glm-5（实验）";
+  }
+  if (model === MODEL_ZHIPU_TEXT) {
+    return "glm-4-flash-250414（智谱文本）";
+  }
+  return "DeepSeek V4 Flash（默认文本）";
 }
 
 function updateStealthPanelState() {
   const selectedModel = getSelectedModel();
+  const deepseekReady = Boolean(adminRuntimeConfig?.deepseek_text_enabled);
   if (stealthState) {
-    stealthState.textContent = `当前：${getModelLabel(selectedModel)}`;
+    let suffix = "";
+    if (selectedModel === MODEL_DEFAULT) {
+      suffix = deepseekReady ? " · 已配置" : " · 未配置 API Key";
+    }
+    stealthState.textContent = `当前：${getModelLabel(selectedModel)}${suffix}`;
   }
 
   stealthOptions.forEach((button) => {
@@ -174,9 +191,11 @@ async function loadAdminConfig() {
     }
 
     const config = await response.json();
+    adminRuntimeConfig = config;
     const backend = config.chat_backend || "direct";
     const guidedAnswer = config.guided_answer_enabled === false ? "off" : "on";
     setAdminRuntimeNote(`当前链路：${backend} · guided_answer=${guidedAnswer}`, "muted");
+    updateStealthPanelState();
   } catch (error) {
     setAdminRuntimeNote(`配置读取失败：${error.message || "请稍后再试"}`, "warning");
   }
@@ -444,6 +463,7 @@ function renderPendingImage() {
 async function sendChat(question, imagePayload = null) {
   const userText = question || "请帮我看看这张图片。";
   const historySnapshot = chatHistory.slice(-6);
+  const selectedModel = getSelectedModel();
 
   appendMessage({
     text: userText,
@@ -459,6 +479,14 @@ async function sendChat(question, imagePayload = null) {
     isPending: true
   });
 
+  if (selectedModel === MODEL_DEFAULT && !adminRuntimeConfig?.deepseek_text_enabled) {
+    const fallbackText =
+      "当前还没配置 DeepSeek 的 API Key，所以这档暂时不能用。你可以先切到智谱文本，或者先把 DeepSeek key 配上。";
+    setMessageContent(pending, { text: fallbackText, assets: [] });
+    pushHistory("assistant", fallbackText);
+    return;
+  }
+
   try {
     const response = await fetch(API_BASE, {
       method: "POST",
@@ -472,7 +500,7 @@ async function sendChat(question, imagePayload = null) {
         history: historySnapshot,
         imageDataUrl: imagePayload?.dataUrl || null,
         imageName: imagePayload?.name || null,
-        modelOverride: getSelectedModel()
+        modelOverride: selectedModel
       })
     });
 
