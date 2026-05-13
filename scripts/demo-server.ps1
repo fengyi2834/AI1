@@ -8,7 +8,9 @@
     [string]$PromptTemplate = ".\config\fastgpt\prompts\demo_live_system_prompt.md",
     [string]$RagPromptTemplate = ".\config\fastgpt\prompts\demo_live_rag_prompt.md",
     [string]$VisionPromptTemplate = ".\config\fastgpt\prompts\demo_vision_system_prompt.md",
-    [string]$MemoryRoot = ".\data\runtime\chat_memory"
+    [string]$MemoryRoot = ".\data\runtime\chat_memory",
+    [string]$LeadLogPath = ".\data\logs\lead_requests.jsonl",
+    [string]$HandoffLogPath = ".\data\logs\handoff_requests.jsonl"
 )
 
 $ErrorActionPreference = "Stop"
@@ -221,6 +223,21 @@ function Resolve-StorageRootPath {
 
     if (-not $ConfiguredPath) {
         return [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\data\runtime\chat_memory"))
+    }
+
+    if ([System.IO.Path]::IsPathRooted($ConfiguredPath)) {
+        return [System.IO.Path]::GetFullPath($ConfiguredPath)
+    }
+
+    $relative = $ConfiguredPath -replace '^[.][\\/]+', ''
+    return [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ("..\{0}" -f $relative)))
+}
+
+function Resolve-ProjectRelativePath {
+    param([string]$ConfiguredPath)
+
+    if (-not $ConfiguredPath) {
+        return $null
     }
 
     if ([System.IO.Path]::IsPathRooted($ConfiguredPath)) {
@@ -519,6 +536,46 @@ function Get-AdminRuntimeConfigResponse {
 
 function Get-NowIsoString {
     return [DateTime]::UtcNow.ToString("o")
+}
+
+function Ensure-ParentDirectory {
+    param([string]$Path)
+
+    if (-not $Path) {
+        return
+    }
+
+    $parent = Split-Path -Parent $Path
+    if ($parent -and -not (Test-Path -LiteralPath $parent)) {
+        New-Item -ItemType Directory -Path $parent -Force | Out-Null
+    }
+}
+
+function New-RequestCaptureResponse {
+    param(
+        [string]$Kind,
+        [hashtable]$Payload,
+        [string]$LogPath
+    )
+
+    $requestId = "{0}-{1}" -f $Kind, ([guid]::NewGuid().ToString("N"))
+    $capturedAt = Get-NowIsoString
+    $record = [ordered]@{
+        request_id = $requestId
+        kind = $Kind
+        captured_at = $capturedAt
+        payload = if ($Payload) { $Payload } else { @{} }
+    }
+
+    Ensure-ParentDirectory -Path $LogPath
+    (($record | ConvertTo-Json -Depth 8 -Compress) + [Environment]::NewLine) | Add-Content -LiteralPath $LogPath -Encoding UTF8
+
+    return [ordered]@{
+        status = "queued"
+        message = if ($Kind -eq "lead") { "Lead request has been captured." } else { "Handoff request has been captured." }
+        request_id = $requestId
+        captured_at = $capturedAt
+    }
 }
 
 function New-TrimmedText {
@@ -3160,6 +3217,8 @@ $resolvedKnowledgeDir = Resolve-Path -LiteralPath $KnowledgeDir -ErrorAction Sil
 $knowledgePath = if ($resolvedKnowledgeDir) { $resolvedKnowledgeDir.Path } else { $KnowledgeDir }
 $resolvedImageCatalogPath = Resolve-Path -LiteralPath $ImageCatalogPath -ErrorAction SilentlyContinue
 $imageCatalogResolvedPath = if ($resolvedImageCatalogPath) { $resolvedImageCatalogPath.Path } else { $ImageCatalogPath }
+$resolvedLeadLogPath = Resolve-ProjectRelativePath -ConfiguredPath $LeadLogPath
+$resolvedHandoffLogPath = Resolve-ProjectRelativePath -ConfiguredPath $HandoffLogPath
 $faqCsvPath = Resolve-FaqCsvPath -ConfiguredPath $FaqCsv
 $faqEntries = Get-FaqEntries -Path $faqCsvPath
 $imageCatalogEntries = Get-ImageCatalogEntries -Path $imageCatalogResolvedPath
@@ -3213,13 +3272,17 @@ while ($true) {
         }
 
         if ($method -eq "POST" -and $path -eq "/api/ai/lead") {
-            Write-TextResponse -Stream $stream -StatusCode 200 -ContentType "application/json; charset=utf-8" -Text '{"status":"queued","message":"Lead request has been queued."}'
+            $payload = if ($request.Body) { ConvertTo-Hashtable -Value ($request.Body | ConvertFrom-Json) } else { @{} }
+            $json = (New-RequestCaptureResponse -Kind "lead" -Payload $payload -LogPath $resolvedLeadLogPath) | ConvertTo-Json -Depth 6
+            Write-TextResponse -Stream $stream -StatusCode 200 -ContentType "application/json; charset=utf-8" -Text $json
             $client.Close()
             continue
         }
 
         if ($method -eq "POST" -and $path -eq "/api/ai/handoff") {
-            Write-TextResponse -Stream $stream -StatusCode 200 -ContentType "application/json; charset=utf-8" -Text '{"status":"queued","message":"Handoff request has been queued."}'
+            $payload = if ($request.Body) { ConvertTo-Hashtable -Value ($request.Body | ConvertFrom-Json) } else { @{} }
+            $json = (New-RequestCaptureResponse -Kind "handoff" -Payload $payload -LogPath $resolvedHandoffLogPath) | ConvertTo-Json -Depth 6
+            Write-TextResponse -Stream $stream -StatusCode 200 -ContentType "application/json; charset=utf-8" -Text $json
             $client.Close()
             continue
         }
