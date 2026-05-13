@@ -24,6 +24,9 @@ workspace/
 raw_docs/
 clean_text/
 import_ready/
+guanwang/assets/raw/
+guanwang/*.pptx
+guanwang/*.pdf
 
 # OS
 .DS_Store
