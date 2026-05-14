@@ -1,0 +1,46 @@
+services:
+  fastgpt-pg:
+    container_name: ai1-fastgpt-pg
+    volumes:
+      - ./runtime_server/pg:/var/lib/postgresql/data
+
+  fastgpt-mongo:
+    container_name: ai1-fastgpt-mongo
+    volumes:
+      - ./runtime_server/mongo:/data/db
+
+  fastgpt-redis:
+    container_name: ai1-fastgpt-redis
+    volumes:
+      - ./runtime_server/redis:/data
+
+  fastgpt-minio:
+    container_name: ai1-fastgpt-minio
+    volumes:
+      - ./runtime_server/minio:/data
+
+  fastgpt-code-sandbox:
+    container_name: ai1-fastgpt-code-sandbox
+
+  fastgpt-plugin:
+    container_name: ai1-fastgpt-plugin
+
+  opensandbox-server:
+    container_name: ai1-fastgpt-opensandbox-server
+
+  fastgpt-volume-manager:
+    container_name: ai1-fastgpt-volume-manager
+
+  fastgpt-aiproxy-pg:
+    container_name: ai1-fastgpt-aiproxy-pg
+    volumes:
+      - ./runtime_server/aiproxy_pg:/var/lib/postgresql/data
+
+  fastgpt-aiproxy:
+    container_name: ai1-fastgpt-aiproxy
+
+  fastgpt-app:
+    container_name: ai1-fastgpt-app
+
+  fastgpt-mcp-server:
+    container_name: ai1-fastgpt-mcp-server
