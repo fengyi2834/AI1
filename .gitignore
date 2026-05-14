@@ -11,6 +11,8 @@ node_modules/
 # Local env
 .env
 .env.*
+deploy/env/*.env
+!deploy/env/*.env.example
 
 # Logs
 logs/
