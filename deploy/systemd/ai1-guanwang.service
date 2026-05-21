@@ -1,0 +1,15 @@
+[Unit]
+Description=AI1 Guanwang Demo Server
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/AI1
+ExecStart=/usr/bin/pwsh -File /opt/AI1/scripts/start-guanwang.ps1 -Port 4180
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target

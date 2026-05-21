@@ -11,6 +11,8 @@ node_modules/
 # Local env
 .env
 .env.*
+deploy/env/*.env
+!deploy/env/*.env.example
 
 # Logs
 logs/
@@ -24,6 +26,10 @@ workspace/
 raw_docs/
 clean_text/
 import_ready/
+guanwang/assets/raw/
+guanwang/assets/preview/
+guanwang/*.pptx
+guanwang/*.pdf
 
 # OS
 .DS_Store
