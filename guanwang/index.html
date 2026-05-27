@@ -3,517 +3,410 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>亿库功能性硅藻板 | 在线咨询与项目接待官网</title>
+  <title>亿库硅藻板</title>
   <meta
     name="description"
-    content="亿库功能性硅藻板官网，聚焦净醛、防水阻燃、抗菌防霉、降噪吸音与高端空间应用，并提供在线咨询、发图咨询与顾问跟进能力。"
-  >
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@500;600;700;900&display=swap"
-    rel="stylesheet"
+    content="亿库硅藻板企业官网，围绕室内环境与长期耐用性展示环保、抗菌、防水、阻燃与耐腐蚀板材方案。"
   >
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <div class="page-shell"></div>
-  <div class="grain"></div>
-
-  <header class="site-header">
-    <div class="brand-lockup">
-      <span class="brand-mark">亿库</span>
-      <div>
-        <p class="brand-cn">YIKU DIATOM BOARD</p>
-        <p class="brand-sub">在线咨询型功能性硅藻板官网</p>
+  <header id="site-header">
+    <div class="topbar hidden-xs">
+      <div class="container topbar-inner">
+        <span>招商热线：0779-8525688 / 18169771178</span>
+        <span>广西北海海洋研究创新园科研一路 B1-1 栋</span>
       </div>
     </div>
 
-    <nav class="site-nav">
-      <a href="#products">产品中心</a>
-      <a href="#scenarios">应用场景</a>
-      <a href="#proof">检测与研发</a>
-      <a href="#cases">经典案例</a>
-      <a href="#contact">联系合作</a>
-    </nav>
+    <div class="container nav-shell">
+      <a class="brand" href="#home" aria-label="返回首页">
+        <img class="brand-logo" src="./assets/mvp2/yiku-logo.svg" alt="亿库 logo">
+        <div class="brand-copy">
+          <strong>亿库硅藻板</strong>
+          <em>环保功能型板材方案</em>
+        </div>
+      </a>
 
-    <button class="nav-cta trigger-ai" data-prompt="我想先快速了解亿库硅藻板适合哪些空间。">
-      联系客服
-    </button>
+      <nav class="nav hidden-xs" aria-label="主导航">
+        <a href="#home">首页</a>
+        <a href="#products">产品中心</a>
+        <a href="#solutions">应用场景</a>
+        <a href="#about">公司介绍</a>
+        <a href="#contact">联系我们</a>
+      </nav>
+
+      <div class="nav-actions hidden-xs">
+        <a class="nav-cta" href="#contact">获取方案</a>
+        <div class="ai-chat ai-chat-inline" data-inline="true">
+          <button class="chat-launcher" type="button" aria-expanded="false">
+            <span class="chat-launcher-badge"></span>
+            <span class="chat-launcher-text">在线咨询</span>
+          </button>
+
+          <div class="chat-panel chat-panel-inline" hidden>
+            <div class="chat-head">
+              <div class="chat-head-copy">
+                <strong>亿库 AI 客服</strong>
+                <span>产品、场景、规格、报价与销售对接</span>
+              </div>
+              <em>即时响应</em>
+            </div>
+
+            <div class="chat-quick">
+              <button type="button" data-quick="你们产品适合哪些场景？">你们产品适合哪些场景？</button>
+              <button type="button" data-quick="学校医院能不能用？">学校医院能不能用？</button>
+              <button type="button" data-quick="规格有哪些？">规格有哪些？</button>
+              <button type="button" data-quick="怎么报价？">怎么报价？</button>
+              <button type="button" data-quick="如何联系销售？">如何联系销售？</button>
+            </div>
+
+            <div class="chat-body" aria-live="polite"></div>
+
+            <form class="chat-form">
+              <input name="draft" type="text" placeholder="请输入你的问题" autocomplete="off">
+              <button type="submit">发送</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <button
+        class="mobile-toggle visible-xs"
+        id="mobile-toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="mobile-nav"
+        aria-label="打开菜单"
+      >
+        菜单
+      </button>
+    </div>
+
+    <div class="mobile-nav visible-xs" id="mobile-nav" hidden>
+      <a href="#home">首页</a>
+      <a href="#products">产品中心</a>
+      <a href="#solutions">应用场景</a>
+      <a href="#about">公司介绍</a>
+      <a href="#contact">联系我们</a>
+
+      <div class="mobile-consult-wrap">
+        <a class="nav-cta mobile-cta" href="#contact">获取方案</a>
+      </div>
+
+      <div class="ai-chat ai-chat-inline mobile-chat" data-inline="true">
+        <button class="chat-launcher" type="button" aria-expanded="false">
+          <span class="chat-launcher-badge"></span>
+          <span class="chat-launcher-text">在线咨询</span>
+        </button>
+
+        <div class="chat-panel chat-panel-inline" hidden>
+          <div class="chat-head">
+            <div class="chat-head-copy">
+              <strong>亿库 AI 客服</strong>
+              <span>产品、场景、规格、报价与销售对接</span>
+            </div>
+            <em>即时响应</em>
+          </div>
+
+          <div class="chat-quick">
+            <button type="button" data-quick="你们产品适合哪些场景？">你们产品适合哪些场景？</button>
+            <button type="button" data-quick="学校医院能不能用？">学校医院能不能用？</button>
+            <button type="button" data-quick="规格有哪些？">规格有哪些？</button>
+            <button type="button" data-quick="怎么报价？">怎么报价？</button>
+            <button type="button" data-quick="如何联系销售？">如何联系销售？</button>
+          </div>
+
+          <div class="chat-body" aria-live="polite"></div>
+
+          <form class="chat-form">
+            <input name="draft" type="text" placeholder="请输入你的问题" autocomplete="off">
+            <button type="submit">发送</button>
+          </form>
+        </div>
+      </div>
+    </div>
   </header>
 
-  <main>
-    <section class="hero section">
-      <div class="hero-copy">
-        <p class="eyebrow">Mineral intelligence for healthier spaces</p>
-        <h1>让空间更安静、洁净、稳定，也让咨询更直接。</h1>
-        <p class="hero-text">
-          亿库围绕海洋硅藻矿物材料研发功能性板材，服务家装、酒店、学校、剧院、实验室与高等级公共空间。
-          这一次，我们把官网本身也升级成一套可发图、可问场景、可留资转人工的在线接待入口。
-        </p>
-
-        <div class="hero-actions">
-          <a class="button button-primary" href="#products">查看产品矩阵</a>
-          <button
-            class="button button-secondary trigger-ai"
-            data-prompt="我有一张现场图，想问这种空间更适合哪类硅藻板。"
-          >
-            发图咨询客服
-          </button>
-        </div>
-
-        <div class="hero-meta">
-          <article>
-            <span>01</span>
-            <p>净醛、防水阻燃、抗菌防霉、降噪吸音与调湿，作为基础能力统一呈现。</p>
-          </article>
-          <article>
-            <span>02</span>
-            <p>支持图片咨询、媒体资产展示和转人工跟进。</p>
-          </article>
-        </div>
-      </div>
-
-      <div class="hero-stage">
-        <div class="hero-stage-backdrop"></div>
-        <figure class="hero-photo hero-photo-primary">
-          <img src="./assets/selected/hero-board.jpg" alt="亿库功能性硅藻板原料与材质近景">
-        </figure>
-        <figure class="hero-photo hero-photo-secondary">
-          <img src="./assets/selected/case-lobby.jpg" alt="亿库硅藻板在高端大堂空间中的应用案例">
-        </figure>
-        <figure class="hero-photo hero-photo-tertiary">
-          <img src="./assets/selected/space-dining.jpg" alt="亿库硅藻板在餐厅空间中的应用视觉">
-        </figure>
-
-        <div class="hero-ticket">
-          <p class="ticket-label">在线客服已接入</p>
-          <p class="ticket-title">支持发图咨询板材、场景和案例</p>
-          <ul>
-            <li>上传现场图判断是否适合卧室、酒店、剧院</li>
-            <li>根据需求推荐抗菌板、吸音板或调湿板</li>
-            <li>涉及报价、施工、合作时自动引导留资</li>
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <section class="stats-strip section">
-      <article>
-        <strong>99.9%</strong>
-        <span>大肠杆菌抗菌率</span>
-      </article>
-      <article>
-        <strong>200 天</strong>
-        <span>海水浸泡不发生物理变化</span>
-      </article>
-      <article>
-        <strong>&lt; 0.01%</strong>
-        <span>吸水膨胀率</span>
-      </article>
-      <article>
-        <strong>50%+</strong>
-        <span>余响时间缩减参考值</span>
-      </article>
-      <article>
-        <strong>在线接待</strong>
-        <span>官网展示与客服接待一体化设计</span>
-      </article>
-    </section>
-
-    <section class="capabilities section" id="proof">
-      <div class="section-heading">
-        <p class="eyebrow">Core capabilities</p>
-        <h2>把材料性能说清楚，也把采购决策做轻。</h2>
-        <p>
-          基于现有资料，我们把亿库的核心卖点整理为面向空间效果的能力语言，让产品经理、设计师、甲方和渠道方都能快速读懂。
-        </p>
-      </div>
-
-      <div class="capability-grid">
-        <article class="capability-card accent-card">
-          <span>净化空气</span>
-          <h3>净醛与低 VOC</h3>
-          <p>面向儿童房、卧室、医院、实验室与高标准内装，突出更洁净的基础环境能力。</p>
-        </article>
-        <article class="capability-card">
-          <span>防护性能</span>
-          <h3>防水阻燃</h3>
-          <p>吸水膨胀率低，兼顾海滨、高湿、地下室与复杂空间的耐久性需求。</p>
-        </article>
-        <article class="capability-card">
-          <span>健康场景</span>
-          <h3>抗菌防霉</h3>
-          <p>适合学校、医院、实验室和长期运营空间，支持更高频、更稳定的日常维护。</p>
-        </article>
-        <article class="capability-card">
-          <span>声学体验</span>
-          <h3>降噪吸音</h3>
-          <p>围绕剧院、会场、音乐厅、教室和影音空间，强调高频吸收与低频衰减能力。</p>
-        </article>
-        <article class="capability-card">
-          <span>舒适性</span>
-          <h3>调湿与保温</h3>
-          <p>为被动房、冷库和高端装配式空间提供更稳定的室内体感基础。</p>
-        </article>
-        <article class="capability-card dark-card">
-          <span>研发背书</span>
-          <h3>矿物环境与海洋材料研发路径</h3>
-          <p>结合海洋硅藻矿物材料研发思路与现有检测文档，在官网上形成可信的技术叙事。</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="products section" id="products">
-      <div class="section-heading split-heading">
-        <div>
-          <p class="eyebrow">Product matrix</p>
-          <h2>从基础内装，到特殊功能板，一次看懂亿库产品矩阵。</h2>
-        </div>
-        <p>
-          产品文案来自现有 PDF 资料，并改写成更适合官网浏览与在线咨询的结构。每张卡都预留了“直接联系客服”的入口。
-        </p>
-      </div>
-
-      <div class="product-grid">
-        <article class="product-card">
-          <h3>海洋硅藻板</h3>
-          <p>适合高端装配式内装、酒店、别墅、门墙柜与吊顶一体化场景。</p>
-          <ul>
-            <li>净醛、抗菌、防水阻燃</li>
-            <li>可裁切、可雕刻、握钉力强</li>
-          </ul>
-          <button class="link-button trigger-ai" data-prompt="我在做酒店或别墅项目，海洋硅藻板适合哪些部位？">联系客服看场景</button>
-        </article>
-        <article class="product-card">
-          <h3>硅藻抗菌板</h3>
-          <p>面向学校、医院、实验室等对洁净与交叉感染控制更敏感的空间。</p>
-          <ul>
-            <li>聚焦抗菌、防霉与过敏源控制</li>
-            <li>适合长期高频使用环境</li>
-          </ul>
-          <button class="link-button trigger-ai" data-prompt="学校和医院场景更适合哪类抗菌板？">联系客服看适配性</button>
-        </article>
-        <article class="product-card">
-          <h3>硅藻储能发光板</h3>
-          <p>吸收太阳光和灯光并持续发光，适合海岛设施、栈道、指示提醒和夜间场景。</p>
-          <ul>
-            <li>储光发光，可持续约 12 小时</li>
-            <li>兼顾防水阻燃与耐腐蚀</li>
-          </ul>
-          <button class="link-button trigger-ai" data-prompt="夜间导视或海滨项目能不能用发光板？">联系客服</button>
-        </article>
-        <article class="product-card">
-          <h3>多孔消音隔热板</h3>
-          <p>面向影院、体育馆、电视发射中心、高层建筑与高防火需求空间。</p>
-          <ul>
-            <li>吸音、隔热、调节温湿度</li>
-            <li>适合被动房与大型公共建筑</li>
-          </ul>
-          <button class="link-button trigger-ai" data-prompt="剧院、会场和体育馆更适合哪种吸音隔热方案？">联系客服推荐方案</button>
-        </article>
-        <article class="product-card">
-          <h3>硅藻蜂窝板</h3>
-          <p>用于墙板、吊顶、浴室、家具、地下室、客船等，对结构轻量化与稳定性更友好。</p>
-          <ul>
-            <li>防水阻燃，不易变形</li>
-            <li>适合复杂潮湿空间</li>
-          </ul>
-          <button class="link-button trigger-ai" data-prompt="浴室、地下室和海滨项目该选蜂窝板吗？">联系客服判断</button>
-        </article>
-        <article class="product-card">
-          <h3>硅藻调湿板</h3>
-          <p>适合室内墙板打底、儿童家具与功能性家具，强调舒适性与室内基础健康。</p>
-          <ul>
-            <li>调节温湿度，辅助净化</li>
-            <li>适合儿童与家庭环境</li>
-          </ul>
-          <button class="link-button trigger-ai" data-prompt="儿童房和卧室应该优先看调湿板还是基础硅藻板？">联系客服帮我判断</button>
-        </article>
-      </div>
-    </section>
-
-    <section class="scenarios section" id="scenarios">
-      <div class="section-heading">
-        <p class="eyebrow">Scenario planning</p>
-        <h2>官网不只是展示应用图，还要帮用户快速判断“这个空间到底适不适合我”。</h2>
-      </div>
-
-      <div class="scenario-layout">
-        <article class="scenario-card panorama-card">
-          <img src="./assets/selected/case-lobby.jpg" alt="高端会所或酒店大堂场景">
-          <div class="scenario-content">
-            <span>酒店 / 会所 / 高端大堂</span>
-            <h3>强调质感、耐久和长期运营维护。</h3>
-            <p>适合突出防潮、防霉、防水阻燃以及大面积稳定饰面能力。</p>
-            <button class="link-button trigger-ai" data-prompt="酒店大堂、会所这类空间用什么板材更稳妥？">联系客服看这个场景</button>
-          </div>
-        </article>
-
-        <article class="scenario-card">
-          <img src="./assets/selected/space-living.jpg" alt="现代客厅空间">
-          <div class="scenario-content">
-            <span>家装客厅</span>
-            <h3>更适合追求洁净、安静和低气味的新房用户。</h3>
-            <p>适合把净醛、调湿与表面完成度作为主卖点。</p>
-          </div>
-        </article>
-
-        <article class="scenario-card">
-          <img src="./assets/selected/space-dining.jpg" alt="现代餐厅空间">
-          <div class="scenario-content">
-            <span>别墅餐厅 / 餐饮包间</span>
-            <h3>需要兼顾高颜值饰面与基础功能性。</h3>
-            <p>适合做门墙柜一体化与精装升级场景。</p>
-          </div>
-        </article>
-
-        <article class="scenario-card">
-          <img src="./assets/selected/case-auditorium.jpg" alt="剧院或阶梯会议空间">
-          <div class="scenario-content">
-            <span>剧院 / 会场 / 教室</span>
-            <h3>声学表现和防火等级更关键。</h3>
-            <p>围绕吸音、余响控制和大型公共空间施工展开咨询。</p>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section class="proof-band section">
-      <div class="proof-copy">
-        <p class="eyebrow">Research and verification</p>
-        <h2>把矿物材料研发、检测结果和咨询逻辑串成一条可信链路。</h2>
-        <p>
-          现有资料里已经给出了材料来源、技术路线、功能特点和典型场景。官网把这些内容拆成用户更容易理解的证据模块，
-          并支持从每个证据点直接跳转到在线咨询。
-        </p>
-      </div>
-
-      <div class="proof-notes">
-        <article>
-          <span>材料逻辑</span>
-          <p>海洋硅藻蛋白石、贝壳粉等矿物基原料，强调天然、无味、低敏与环保叙事。</p>
-        </article>
-        <article>
-          <span>检测表达</span>
-          <p>把抗菌率、吸水膨胀率、耐腐蚀与降噪表现转成采购和设计团队更容易用的决策信息。</p>
-        </article>
-        <article>
-          <span>在线咨询入口</span>
-          <p>支持“板材推荐”“图片咨询”“参考图请求”“顾问跟进”四类优先问法。</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="cases section" id="cases">
-      <div class="section-heading split-heading">
-        <div>
-          <p class="eyebrow">Classic cases</p>
-          <h2>把资料里的空间图片重新组织成“可转化”的案例区。</h2>
-        </div>
-        <p>
-          不只展示“做过什么”，而是说明“为什么这个空间会选它”。案例区同样预埋联系客服入口，方便继续问材料、工艺和合作。
-        </p>
-      </div>
-
-      <div class="case-grid">
-        <article class="case-card featured-case">
-          <img src="./assets/selected/case-stair.jpg" alt="高端公共空间楼梯案例">
-          <div class="case-copy">
-            <span>高等级公共空间</span>
-            <h3>门厅、楼梯、立面与灯光关系复杂，更需要稳定饰面体系。</h3>
-            <p>强调高完成度饰面、持续运营维护和空间气质控制。</p>
-          </div>
-        </article>
-        <article class="case-card">
-          <img src="./assets/selected/space-gallery.jpg" alt="餐厅或精装空间">
-          <div class="case-copy">
-            <span>精装家居</span>
-            <h3>从墙面到顶面，兼顾洁净与质感。</h3>
-          </div>
-        </article>
-        <article class="case-card">
-          <img src="./assets/selected/case-hotel.jpg" alt="酒店客房案例">
-          <div class="case-copy">
-            <span>酒店客房</span>
-            <h3>强调舒适、安静和低气味体验。</h3>
-          </div>
-        </article>
-        <article class="case-card">
-          <img src="./assets/selected/case-forum.jpg" alt="论坛或阶梯会场案例">
-          <div class="case-copy">
-            <span>会场论坛</span>
-            <h3>服务声学、耐久与防火并行需求。</h3>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section class="ai-workflow section">
-      <div class="section-heading split-heading">
-        <div>
-          <p class="eyebrow">Consultation workflow</p>
-          <h2>这个官网从第一天就按在线接待站来设计。</h2>
-        </div>
-        <p>
-          前端请求体、会话字段和媒体资产逻辑已经接入现有客服接口，适合继续扩展成正式在线接待。
-        </p>
-      </div>
-
-      <div class="workflow-grid">
-        <article>
-          <span>01</span>
-          <h3>会话标识</h3>
-          <p>为每位访客自动生成会话身份，方便顾问连续理解上下文。</p>
-        </article>
-        <article>
-          <span>02</span>
-          <h3>图片问答</h3>
-          <p>支持 `imageDataUrl + imageName` 上传，适合让用户直接发现场图咨询。</p>
-        </article>
-        <article>
-          <span>03</span>
-          <h3>媒体代理</h3>
-          <p>本地营销图与客服返回资产图分开渲染，方便后续统一接入媒体代理。</p>
-        </article>
-        <article>
-          <span>04</span>
-          <h3>留资转人工</h3>
-          <p>当用户问价格、施工、合作和联系方式时，引导走留资表单与人工承接流程。</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="contact section" id="contact">
-      <div class="contact-panel">
-        <div class="contact-copy">
-          <p class="eyebrow">Contact and handoff</p>
-          <h2>先在线接待需求，再把高意向线索交给团队。</h2>
-          <p>
-            适合渠道合作、项目报价、施工咨询、材料送样与场景判断。你可以直接提交需求，也可以先点击下方按钮先和客服沟通。
-          </p>
-
-          <div class="contact-actions">
-            <button class="button button-primary trigger-ai" data-prompt="我想了解报价、送样或合作方式。">
-              先咨询再留资
-            </button>
-            <a class="button button-secondary" href="mailto:hello@yiku.local">邮件联系</a>
+  <main class="app-main">
+    <div id="home-page">
+      <section class="hero" id="home">
+        <div class="container hero-inner">
+          <div class="hero-copy">
+            <p class="hero-tag">YIKU MARINE DIATOM BOARD</p>
+            <h1>亿库硅藻板</h1>
+            <p class="hero-text">
+              面向家装、工装、学校、医院、酒店与滨海环境，提供兼顾环保、耐用、防水、阻燃与抗菌能力的功能型板材方案。
+            </p>
+            <div class="hero-actions">
+              <a class="hero-btn hero-btn-primary" href="#contact">获取方案</a>
+              <a class="hero-btn hero-btn-secondary" href="#products">查看产品中心</a>
+            </div>
+            <div class="hero-metrics">
+              <article>
+                <strong>家装 / 工装 / 公共空间</strong>
+                <span>典型服务方向</span>
+              </article>
+              <article>
+                <strong>环保 / 抗菌 / 防水 / 阻燃</strong>
+                <span>核心能力</span>
+              </article>
+              <article>
+                <strong>规格匹配 / 样品验证 / 报价交付</strong>
+                <span>项目支持</span>
+              </article>
+            </div>
           </div>
         </div>
+      </section>
 
-        <form class="lead-form" id="lead-form">
-          <label>
-            姓名
-            <input type="text" name="name" placeholder="请输入姓名" required>
-          </label>
-          <label>
-            联系方式
-            <input type="text" name="phone" placeholder="电话 / 微信 / 邮箱" required>
-          </label>
-          <label>
-            需求类型
-            <select name="intent">
-              <option value="报价咨询">报价咨询</option>
-              <option value="施工咨询">施工咨询</option>
-              <option value="渠道合作">渠道合作</option>
-              <option value="送样申请">送样申请</option>
-            </select>
-          </label>
-          <label>
-            项目说明
-            <textarea name="message" rows="4" placeholder="例如：酒店大厅 600 平，想了解吸音与防潮方案。"></textarea>
-          </label>
-          <button class="button button-primary" id="lead-submit" type="submit">提交线索</button>
-          <p class="form-note">填写后会进入顾问跟进流程。</p>
-        </form>
-      </div>
-    </section>
+      <section class="site-page" id="why">
+        <div class="container">
+          <div class="page-hero">
+            <p>Why YIKU</p>
+            <h2>围绕室内环境与长期耐用性构建产品能力</h2>
+            <span>不把板材只当作装饰层，而是把环保、抗菌、防霉、防水、阻燃和耐腐蚀能力一起放进材料方案里。</span>
+          </div>
+          <div class="site-card-grid value-grid">
+            <article class="site-card">
+              <h3>环保健康</h3>
+              <p>产品自身甲醛和重金属未检出，适合对空气质量更敏感的住宅、学校和医疗类空间。</p>
+            </article>
+            <article class="site-card">
+              <h3>抗菌防霉</h3>
+              <p>可作为医院、学校、实验室等对卫生要求更高场景的材料方向，减少潮湿霉变困扰。</p>
+            </article>
+            <article class="site-card">
+              <h3>防水阻燃</h3>
+              <p>具备防水与 B1 级防火能力，适合潮湿环境和对防火有要求的工程空间。</p>
+            </article>
+            <article class="site-card">
+              <h3>耐腐蚀耐用</h3>
+              <p>耐酸碱、耐腐蚀、不易变形，更适合滨海、船舶和高湿环境的长期应用。</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="site-page site-page-band" id="about">
+        <div class="container">
+          <div class="page-hero">
+            <p>About YIKU</p>
+            <h2>关于亿库</h2>
+            <span>广西亿库光养硅藻环保科技有限公司专注环保功能型板材，围绕住宅、学校、医院、酒店、商业空间与滨海项目提供材料解决方案。</span>
+          </div>
+          <div class="site-card-grid intro-grid">
+            <article class="site-card intro-main">
+              <h3>服务方式</h3>
+              <p>需求沟通、规格匹配、样品验证、报价交付与安装售后支持。</p>
+            </article>
+            <article class="site-card">
+              <h3>公司名称</h3>
+              <p>广西亿库光养硅藻环保科技有限公司</p>
+            </article>
+            <article class="site-card">
+              <h3>核心产品</h3>
+              <p>亿库硅藻板</p>
+            </article>
+            <article class="site-card">
+              <h3>典型场景</h3>
+              <p>住宅、酒店、学校、医院、商业空间、滨海工程</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="site-page" id="solutions">
+        <div class="container">
+          <div class="page-hero">
+            <p>Solutions</p>
+            <h2>应用场景</h2>
+            <span>从家装定制到高湿、高盐雾环境，覆盖多种空间和项目需求。</span>
+          </div>
+          <div class="site-card-grid scene-grid">
+            <article class="site-card">
+              <h3>家装与定制</h3>
+              <ul>
+                <li>墙板</li>
+                <li>吊顶</li>
+                <li>柜体</li>
+                <li>门板</li>
+                <li>移门</li>
+                <li>儿童房家具</li>
+              </ul>
+            </article>
+            <article class="site-card">
+              <h3>商业空间</h3>
+              <ul>
+                <li>酒店</li>
+                <li>会所</li>
+                <li>办公空间</li>
+                <li>品牌门店</li>
+              </ul>
+            </article>
+            <article class="site-card">
+              <h3>公共空间</h3>
+              <ul>
+                <li>学校</li>
+                <li>医院</li>
+                <li>实验室</li>
+                <li>会议室</li>
+                <li>剧院</li>
+              </ul>
+            </article>
+            <article class="site-card">
+              <h3>特殊环境</h3>
+              <ul>
+                <li>滨海码头</li>
+                <li>船舶内装</li>
+                <li>潮湿区域</li>
+                <li>冷库</li>
+                <li>高防火区域</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="site-page site-page-band" id="cases">
+        <div class="container">
+          <div class="page-hero">
+            <p>Cases</p>
+            <h2>真实案例</h2>
+            <span>优先展示酒店、学校、住宅和滨海环境场景，让客户更容易理解实际落地效果。</span>
+          </div>
+          <div class="site-card-grid cases-grid">
+            <article class="site-card case-card">
+              <div class="case-photo" style="background-image: url('./assets/mvp2/yiku-case-hotel.jpg');"></div>
+              <div class="case-copy">
+                <strong>酒店案例</strong>
+                <span>适合强调空间质感、健康环保与静音体验的住宿场景。</span>
+              </div>
+            </article>
+            <article class="site-card case-card">
+              <div class="case-photo" style="background-image: url('./assets/mvp2/yiku-case-school.jpg');"></div>
+              <div class="case-copy">
+                <strong>学校案例</strong>
+                <span>适合兼顾吸音降噪、抗菌环保和耐久性的教学与会议空间。</span>
+              </div>
+            </article>
+            <article class="site-card case-card">
+              <div class="case-photo" style="background-image: url('./assets/mvp2/yiku-case-residential.jpg');"></div>
+              <div class="case-copy">
+                <strong>住宅案例</strong>
+                <span>适合内装配式装修与全屋空间，突出舒适度和长期居住体验。</span>
+              </div>
+            </article>
+            <article class="site-card case-card">
+              <div class="case-photo" style="background-image: url('./assets/mvp2/yiku-case-marine.jpg');"></div>
+              <div class="case-copy">
+                <strong>海洋场景案例</strong>
+                <span>适合海洋牧场、滨海设施和高盐雾环境，强化耐腐蚀与稳定性。</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="site-page" id="products">
+        <div class="container">
+          <div class="page-hero">
+            <p>Detail</p>
+            <h2>产品细节展示</h2>
+            <span>用真实产品图替代概念图，让客户更快判断材质、厚度和适用方向。</span>
+          </div>
+          <div class="site-card detail-showcase">
+            <div
+              class="detail-image"
+              style="background-image: url('./assets/mvp2/yiku-product-basic.jpg');"
+              aria-label="亿库硅藻板产品细节图"
+            ></div>
+            <div class="detail-copy">
+              <h3>从样品质感到项目匹配</h3>
+              <p>硅藻素板适合作为首页的核心产品主图。它能直接传达板材外观、厚度和基础材质感，比抽象效果图更利于客户快速建立认知。</p>
+              <ul>
+                <li>可用于墙板、吊顶、门板、家具与内装配式装修</li>
+                <li>支持围绕厚度、安装方式和空间功能进行组合匹配</li>
+                <li>适合与案例区和咨询入口一起使用，形成转化闭环</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="site-page site-page-soft" id="process">
+        <div class="container">
+          <div class="page-hero">
+            <p>Process</p>
+            <h2>合作流程</h2>
+            <span>把方案沟通、样品验证、报价交付和售后支持串成完整的服务过程。</span>
+          </div>
+          <div class="site-card process-band">
+            <div class="process-step">
+              <em>01</em>
+              <strong>需求沟通</strong>
+              <span>围绕场景、预算、功能优先级和施工条件做基础判断。</span>
+            </div>
+            <div class="process-step">
+              <em>02</em>
+              <strong>规格匹配</strong>
+              <span>结合板型、厚度、安装方式和项目节奏给出匹配建议。</span>
+            </div>
+            <div class="process-step">
+              <em>03</em>
+              <strong>样品验证</strong>
+              <span>通过样品、案例和资料完成前期确认。</span>
+            </div>
+            <div class="process-step">
+              <em>04</em>
+              <strong>报价交付</strong>
+              <span>明确规格、数量、交付节点与后续配合方式。</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="site-page contact-strip" id="contact">
+        <div class="container contact-strip-inner">
+          <div>
+            <p>Contact</p>
+            <h2>联系亿库团队</h2>
+            <span>适合项目咨询、规格沟通、报价评估、渠道合作和样品对接。</span>
+          </div>
+          <div class="contact-strip-meta">
+            <strong>0779-8525688 / 18169771178</strong>
+            <span>广西北海海洋研究创新园科研一路 B1-1 栋</span>
+          </div>
+        </div>
+      </section>
+    </div>
   </main>
 
-  <button class="ai-launcher" id="ai-launcher" aria-label="打开在线客服面板">
-    <span>联系</span>
-    <small>客服</small>
-  </button>
-
-  <aside class="ai-panel" id="ai-panel" aria-hidden="true">
-    <div class="ai-panel-header">
+  <footer id="site-footer">
+    <div class="container footer-grid">
       <div>
-        <p class="ai-panel-eyebrow">在线客服</p>
-        <h2>项目咨询接待</h2>
-      </div>
-      <button class="panel-close" id="panel-close" aria-label="关闭在线客服面板">×</button>
-    </div>
-
-    <div class="ai-protocol">
-      <span>在线咨询</span>
-      <span>支持发图咨询</span>
-      <span>可转顾问跟进</span>
-    </div>
-
-    <p class="ai-model-status" id="ai-model-status">当前客服已接入，可直接发送产品、场景、报价或施工问题。</p>
-
-    <section class="admin-console hidden" id="admin-console" aria-label="内部调试">
-      <div class="admin-console-header">
-        <div>
-          <p class="admin-console-eyebrow">Debug</p>
-          <strong>内部调试</strong>
+        <div class="footer-brand-row">
+          <img class="footer-logo" src="./assets/mvp2/yiku-logo.svg" alt="亿库 logo">
+          <p class="footer-brand">亿库硅藻板</p>
         </div>
-        <button class="admin-toggle-button" id="admin-toggle-button" type="button" aria-expanded="false">查看状态</button>
+        <p class="footer-copy">环保功能型板材方案，服务家装、工装、公共空间与特殊环境项目。</p>
       </div>
-
-      <div class="admin-console-body hidden" id="admin-console-body">
-        <div class="admin-switch">
-          <div class="admin-switch-copy">
-            <strong>当前客服链路</strong>
-            <p>这里用于查看接待链路状态，仅供内部联调时使用。</p>
-          </div>
-
-        </div>
-
-        <p class="admin-runtime-note" id="admin-runtime-note">正在读取当前状态…</p>
+      <div>
+        <p class="footer-title">联系方式</p>
+        <p>招商热线：0779-8525688</p>
+        <p>联系电话：18169771178</p>
       </div>
-    </section>
-
-    <div class="ai-suggestions">
-      <button class="suggestion" data-prompt="卧室午睡容易被吵醒，推荐哪种板材？">卧室安静方案</button>
-      <button class="suggestion" data-prompt="学校或医院项目应该优先看哪类抗菌板？">抗菌板推荐</button>
-      <button class="suggestion" data-prompt="剧院和会议厅适合多孔消音隔热板吗？">吸音隔热判断</button>
-      <button class="suggestion" data-prompt="我想看酒店和会所的应用案例。">要案例参考图</button>
+      <div>
+        <p class="footer-title">地址</p>
+        <p>广西北海海洋研究创新园科研一路 B1-1 栋</p>
+      </div>
     </div>
+    <div class="footer-bottom">
+      Copyright © 2020 - <span id="current-year"></span> 广西亿库光养硅藻环保科技有限公司
+    </div>
+  </footer>
 
-    <div class="chat-stream" id="chat-stream"></div>
-
-    <form class="lead-bridge hidden" id="lead-bridge">
-      <h3>这类需求建议交给顾问继续跟进</h3>
-      <div class="lead-bridge-grid">
-        <input type="text" name="bridgeName" placeholder="姓名">
-        <input type="text" name="bridgeContact" placeholder="电话 / 微信">
-      </div>
-      <textarea name="bridgeNeed" rows="3" placeholder="补充项目需求，例如报价、施工或合作方式"></textarea>
-      <button class="button button-primary" id="lead-bridge-submit" type="submit">提交给客服</button>
-    </form>
-
-    <form class="chat-composer" id="chat-composer">
-      <label class="upload-chip" for="image-input">
-        <input id="image-input" name="image" type="file" accept="image/*">
-        <span id="image-label">上传现场图</span>
-      </label>
-      <textarea
-        id="chat-input"
-        name="question"
-        rows="3"
-        placeholder="请输入问题，例如：酒店大堂适合用哪种板材？"
-      ></textarea>
-      <button class="button button-primary" id="chat-submit" type="submit">发送给客服</button>
-    </form>
-  </aside>
-
-  <template id="message-template">
-    <article class="message">
-      <div class="message-role"></div>
-      <div class="message-bubble"></div>
-    </article>
-  </template>
+  <button id="go-top" type="button" aria-label="回到顶部">↑</button>
 
   <script src="./script.js"></script>
 </body>

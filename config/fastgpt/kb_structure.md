@@ -1,61 +1,42 @@
-# 知识库目录模板（从 xlsx/docx 起步）
+# 知识库结构（已升级为 MVP2 FlashGPT 格式）
 
-适用于“广西亿库光养硅藻环保科技有限公司”AI 客服建设的资料整理结构。
+当前知识库文件位于 `data/import_ready/`：
 
-## 目录结构建议
+| 文件 | 用途 | 大小 |
+|------|------|------|
+| `FlashGPT知识库.txt` | FastGPT RAG 主知识库，Q&A + 文档混合格式 | 35KB |
+| `知识库.md` | 补充深度文档，含产品规格表、性能对比、话术 | 60KB |
+
+## FlashGPT知识库.txt 结构
+
 ```
-kb/
-  00_readme.md
-  01_company/
-    company_profile.md
-    qualifications.md
-  02_products/
-    product_overview.md
-    product_specs_table.md
-    product_models/
-      model_a.md
-      model_b.md
-  03_pricing/
-    pricing_policy.md
-    quotation_rules.md
-  04_cases/
-    case_template.md
-    case_001.md
-  05_installation/
-    installation_flow.md
-    maintenance.md
-  06_after_sales/
-    warranty.md
-    service_scope.md
-  07_faq/
-    faq_general.md
-    faq_installation.md
-    faq_quality.md
-  08_policy/
-    compliance_statement.md
-    privacy_policy.md
-  09_contact/
-    contact_info.md
-    lead_capture.md
-  99_changes/
-    change_log.md
+类别：FAQ问答对        （精准 Q&A 检索，586行）
+类别：公司介绍          （公司背景）
+类别：什么是硅藻与硅藻土 （基础知识）
+类别：产品定位与介绍     （核心卖点、目标客户）
+类别：八大核心功能       （负离子、防水阻燃、降噪吸音...）
+类别：七大产品类型       （素板/抗菌板/蜂窝板/吸音板/调湿板/消音隔热板/发光板）
+类别：产品规格与定制     （尺寸、厚度、饰面系列）
+类别：制作工艺与物理性能 （工艺参数、导热系数、抗折强度等）
+类别：三大特点           （天然/安全/环保）
+类别：产品优势详解       （净化空气、防霉抗菌、健康养生等）
+类别：与传统材料性能对比 （vs 玻镁板/硅酸钙板/石膏板/硅藻泥/实木板/壁纸）
+类别：产品适用范围与场景 （家装/轮船/养殖/医院/房车）
+类别：销售话术与异议处理 （开场白、痛点转化、报价流程、跟进节奏）
+类别：参数与优势对照表
+类别：亿库硅藻抗菌防霉菜板
 ```
 
-## 从 xlsx/docx 生成知识块的最小流程
-1. `docx` 提取为纯文本或 Markdown，按主题拆分成短段落。
-2. `xlsx` 拆成 “问题-答案 / 参数表 / 规格说明” 三类内容。
-3. 每个文件控制在 300-800 字左右，标题清晰，避免超长段落。
+## FastGPT 导入建议
 
-## FAQ 模板（建议统一格式）
-```
-Q: 光养硅藻板适用哪些场景？
-A: 适用于...
+1. 导入 `FlashGPT知识库.txt` 作为主知识库，切片模式选"自定义分隔符"
+2. 分隔符用空行（两个换行），每段 Q&A 独立切片
+3. `知识库.md` 作为补充文档库，切片模式选"Markdown 标题"
+4. 向量模型用 `embedding-3`（智谱）
 
-Q: 是否支持定制尺寸？
-A: 支持...
-```
+## AI 客服规则（写入系统提示词）
 
-## 切片建议
-- 每段 200-500 字，标题必须明确描述主题。
-- 表格类内容拆成“字段说明 + 示例行”。
-- 不确定的描述用 “需确认/建议联系人工” 提示，避免 AI 编造。
+- 报价前必须确认：面积、部位、基层、是否包安装、城市
+- "吸音"≠"隔音"，不能混用
+- 不编造参数、证书编号、价格
+- 超出知识库时建议转人工

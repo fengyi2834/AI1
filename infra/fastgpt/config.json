@@ -5,13 +5,13 @@
     "mcpServerProxyEndpoint": "http://localhost:3005"
   },
   "systemEnv": {
-    "datasetParseMaxProcess": 6,
-    "vectorMaxProcess": 6,
-    "qaMaxProcess": 6,
-    "vlmMaxProcess": 3,
-    "tokenWorkers": 10,
-    "hnswEfSearch": 100,
-    "hnswMaxScanTuples": 100000,
+    "datasetParseMaxProcess": 2,
+    "vectorMaxProcess": 2,
+    "qaMaxProcess": 2,
+    "vlmMaxProcess": 1,
+    "tokenWorkers": 4,
+    "hnswEfSearch": 50,
+    "hnswMaxScanTuples": 50000,
     "customPdfParse": {
       "url": "",
       "key": "",

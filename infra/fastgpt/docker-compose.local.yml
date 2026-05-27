@@ -36,6 +36,10 @@ services:
     restart: always
     networks:
       - fastgpt
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     environment:
       POSTGRES_USER: ${PG_USER:-username}
       POSTGRES_PASSWORD: ${PG_PASSWORD:-password}
@@ -54,6 +58,10 @@ services:
     restart: always
     networks:
       - fastgpt
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     command: mongod --keyFile /data/mongodb.key --replSet rs0
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-myusername}
@@ -96,6 +104,10 @@ services:
     restart: always
     networks:
       - fastgpt
+    deploy:
+      resources:
+        limits:
+          memory: 384M
     command: >
       redis-server
       --requirepass ${REDIS_PASSWORD:-mypassword}
@@ -103,7 +115,7 @@ services:
       --maxclients 10000
       --appendonly yes
       --save 60 10
-      --maxmemory 1gb
+      --maxmemory 384mb
       --maxmemory-policy noeviction
     volumes:
       - ./runtime/redis:/data
@@ -118,6 +130,10 @@ services:
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: fastgpt-minio
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 384M
     ports:
       - "${MINIO_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
@@ -141,13 +157,17 @@ services:
     restart: always
     networks:
       - fastgpt
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     environment:
       <<: *x-log-config
       LOG_OTEL_SERVICE_NAME: fastgpt-code-sandbox
       SANDBOX_TOKEN: *x-code-sandbox-token
       SANDBOX_MAX_TIMEOUT: "60000"
       SANDBOX_MAX_MEMORY_MB: "256"
-      SANDBOX_POOL_SIZE: "10"
+      SANDBOX_POOL_SIZE: "4"
       CHECK_INTERNAL_IP: "false"
       SANDBOX_REQUEST_MAX_COUNT: "30"
       SANDBOX_REQUEST_TIMEOUT: "60000"
@@ -170,6 +190,10 @@ services:
         condition: service_healthy
     networks:
       - fastgpt
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     environment:
       <<: [*x-share-db-config, *x-log-config]
       AUTH_TOKEN: *x-plugin-auth-token
@@ -188,6 +212,10 @@ services:
     restart: always
     networks:
       - fastgpt
+    deploy:
+      resources:
+        limits:
+          memory: 384M
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     configs:
@@ -207,6 +235,10 @@ services:
     restart: always
     networks:
       - fastgpt
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
@@ -226,6 +258,10 @@ services:
     image: pgvector/pgvector:0.8.0-pg15
     container_name: fastgpt-aiproxy-pg
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     volumes:
       - ./runtime/aiproxy_pg:/var/lib/postgresql/data
     networks:
@@ -251,6 +287,10 @@ services:
     networks:
       - fastgpt
       - aiproxy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     environment:
       ADMIN_KEY: *x-aiproxy-token
       LOG_DETAIL_STORAGE_HOURS: "1"
@@ -276,6 +316,10 @@ services:
     restart: always
     networks:
       - fastgpt
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
     environment:
       <<: [*x-share-db-config, *x-vec-config, *x-log-config]
       FE_DOMAIN: ${FE_DOMAIN:-http://localhost:3000}
@@ -325,6 +369,10 @@ services:
     restart: always
     networks:
       - fastgpt
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     environment:
       <<: *x-log-config
       FASTGPT_ENDPOINT: http://fastgpt-app:3000

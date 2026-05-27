@@ -83,19 +83,19 @@ function Get-DirectTextModel {
         return $candidate
     }
 
-    return Get-EnvValue -EnvMap $EnvMap -Key "DEMO_TEXT_MODEL" -Default "deepseek-v4-flash"
+    return Get-EnvValue -EnvMap $EnvMap -Key "DEMO_TEXT_MODEL" -Default "deepseek-chat"
 }
 
 function Get-VisionModel {
     param([hashtable]$EnvMap)
 
-    return Get-EnvValue -EnvMap $EnvMap -Key "DEMO_VISION_MODEL" -Default "glm-4v-flash"
+    return Get-EnvValue -EnvMap $EnvMap -Key "DEMO_VISION_MODEL" -Default "glm-4.6v-flashx"
 }
 
 function Get-ImageFlowTextModel {
     param([hashtable]$EnvMap)
 
-    return Get-EnvValue -EnvMap $EnvMap -Key "DEMO_IMAGE_TEXT_MODEL" -Default "glm-4-flash-250414"
+    return Get-EnvValue -EnvMap $EnvMap -Key "DEMO_IMAGE_TEXT_MODEL" -Default "deepseek-chat"
 }
 
 function Get-DirectTextProviderConfig {
@@ -1751,7 +1751,7 @@ function Test-IsGreetingOrLowIntent {
         return $true
     }
 
-    $domainHint = $trimmed -match "公司|产品|板材|硅藻|新房|装修|入住|除味|异味|甲醛|空气|价格|报价|合作|代理|施工|方案|地址|在哪|哪里|质量|效果"
+    $domainHint = $trimmed -match "公司|产品|板材|硅藻|菜板|隔音板|背景墙|地板|家具|柜体|新房|装修|入住|除味|异味|甲醛|空气|价格|报价|合作|代理|施工|方案|地址|在哪|哪里|质量|效果|规格|尺寸|厚度|颜色|防水|防火|防潮|抗菌|隔音|有没有|怎么卖|推荐|适合|场景|吊顶|墙板|板"
     $hasQuestion = $trimmed -match "[\?？吗么呢]"
     $isVeryShort = $trimmed.Length -le 6
 

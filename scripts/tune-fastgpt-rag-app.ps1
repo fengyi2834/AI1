@@ -2,7 +2,7 @@ param(
     [string]$AppId = "69e0562ea67193262b8de666",
     [string]$VersionId = "69e0562ea67193262b8de667",
     [string]$DatasetId = "69e03880d9b607f9459582d6",
-    [string]$AnswerModel = "glm-4-flash-250414",
+    [string]$AnswerModel = "deepseek-chat",
     [bool]$EnableVision = $false,
     [bool]$EnableImageUpload = $false,
     [string]$SystemPromptPath = ".\config\fastgpt\prompts\demo_live_system_prompt.md",
