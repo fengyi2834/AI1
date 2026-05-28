@@ -220,9 +220,7 @@ services:
           memory: 384M
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    configs:
-      - source: opensandbox-config
-        target: /etc/opensandbox/config.toml
+      - ./opensandbox-config.toml:/etc/opensandbox/config.toml:ro
     environment:
       SANDBOX_CONFIG_PATH: /etc/opensandbox/config.toml
     healthcheck:
@@ -387,21 +385,3 @@ networks:
 
 volumes: {}
 
-configs:
-  opensandbox-config:
-    content: |
-      [server]
-      host = "0.0.0.0"
-      port = 8090
-      log_level = "INFO"
-
-      [runtime]
-      type = "docker"
-      execd_image = "opensandbox/execd:v1.0.7"
-
-      [egress]
-      image = "opensandbox/egress:v1.0.3"
-
-      [docker]
-      network_mode = "bridge"
-      host_ip = "host.docker.internal"
