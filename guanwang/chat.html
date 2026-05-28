@@ -86,6 +86,9 @@
     .auth-dialog .auth-tabs { display: flex; gap: 0; margin-bottom: 16px; }
     .auth-dialog .auth-tab { flex: 1; padding: 8px; text-align: center; border-bottom: 2px solid #eee; cursor: pointer; font-size: 14px; color: #888; }
     .auth-dialog .auth-tab.active { border-bottom-color: var(--site-primary, #3370FF); color: var(--site-primary, #3370FF); font-weight: 600; }
+    .auth-forgot { text-align: right; margin: -8px 0 0 0; font-size: 12px; }
+    .auth-forgot a { color: #888; text-decoration: none; }
+    .auth-forgot a:hover { color: var(--site-primary, #3370FF); }
     .auth-dialog .auth-error { color: #e00; font-size: 12px; margin-bottom: 8px; }
     .auth-dialog .auth-hint { font-size: 12px; color: #888; margin-bottom: 10px; }
   </style>
@@ -135,8 +138,11 @@
       </div>
       <p class="auth-error" id="authError" hidden></p>
       <form id="loginForm"><input type="email" placeholder="邮箱" required><input type="password" placeholder="密码" required minlength="6"><button type="submit">登录</button></form>
+      <p class="auth-forgot"><a id="forgotLink" href="javascript:;">忘记密码？</a></p>
       <form id="registerForm" hidden><input type="email" placeholder="邮箱" required><input type="password" placeholder="密码（至少6位）" required minlength="6"><input type="text" placeholder="昵称（选填）"><button type="submit">获取验证码</button></form>
       <form id="verifyForm" hidden><p class="auth-hint">验证码已发送至 <strong id="verifyEmail"></strong>，如未收到请检查垃圾邮件</p><input type="text" placeholder="6位验证码" required maxlength="6"><button type="submit">验证并激活</button></form>
+      <form id="forgotForm" hidden><p class="auth-hint">输入注册邮箱，我们将发送重置验证码</p><input type="email" placeholder="注册邮箱" required><button type="submit">获取重置验证码</button></form>
+      <form id="resetForm" hidden><p class="auth-hint">重置验证码已发送至 <strong id="resetEmail"></strong></p><input type="text" placeholder="6位验证码" required maxlength="6"><input type="password" placeholder="新密码（至少6位）" required minlength="6"><button type="submit">重置密码</button></form>
     </div>
   </div>
 
@@ -216,6 +222,9 @@
         loginForm.hidden = tab !== 'login';
         registerForm.hidden = tab !== 'register';
         verifyForm.hidden = true;
+        forgotForm.hidden = true;
+        resetForm.hidden = true;
+        forgotLink.style.display = tab === 'login' ? '' : 'none';
         hideAuthError();
       }
 
@@ -295,6 +304,55 @@
             });
           } else {
             showAuthError(d.message || '验证失败');
+          }
+        });
+      });
+
+      var forgotForm = document.getElementById('forgotForm');
+      var resetForm = document.getElementById('resetForm');
+      var forgotLink = document.getElementById('forgotLink');
+      var resetEmail = document.getElementById('resetEmail');
+      var pendingForgotEmail = '';
+
+      forgotLink.addEventListener('click', function() {
+        switchTab('');
+        loginForm.hidden = true;
+        registerForm.hidden = true;
+        verifyForm.hidden = true;
+        forgotForm.hidden = false;
+        resetForm.hidden = true;
+        hideAuthError();
+      });
+
+      forgotForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var email = forgotForm.querySelector('[type=email]').value.trim();
+        pendingForgotEmail = email;
+        api('/api/auth/forgot', { email: email }).then(function(d) {
+          if (d.ok) {
+            resetEmail.textContent = email;
+            forgotForm.hidden = true;
+            resetForm.hidden = false;
+            hideAuthError();
+          } else {
+            showAuthError(d.message || '发送失败');
+          }
+        });
+      });
+
+      resetForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var code = resetForm.querySelector('[type=text]').value.trim();
+        var newPw = resetForm.querySelector('[type=password]').value;
+        api('/api/auth/reset-password', { email: pendingForgotEmail, code: code, newPassword: newPw }).then(function(d) {
+          if (d.ok) {
+            showAuthError(''); hideAuthError();
+            alert('密码已重置，请用新密码登录');
+            switchTab('login');
+            resetForm.reset();
+            forgotForm.reset();
+          } else {
+            showAuthError(d.message || '重置失败');
           }
         });
       });

@@ -3776,6 +3776,102 @@ while ($true) {
             continue
         }
 
+        # POST /api/auth/forgot
+        if ($method -eq "POST" -and $path -eq "/api/auth/forgot") {
+            $body = if ($request.Body) { $request.Body | ConvertFrom-Json } else { $null }
+            $email = if ($body -and $body.email) { [string]$body.email } else { "" }
+
+            if (-not (Test-IsValidEmail -Email $email)) {
+                $json = (@{ok = $false; message = "邮箱格式不正确"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 400 -Json $json
+                $client.Close()
+                continue
+            }
+
+            if (-not $script:AuthUsers.ContainsKey($email)) {
+                $json = (@{ok = $false; message = "该邮箱未注册"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 400 -Json $json
+                $client.Close()
+                continue
+            }
+
+            if (-not $script:AuthUsers[$email].verified) {
+                $json = (@{ok = $false; message = "该邮箱尚未激活，请先完成注册验证"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 400 -Json $json
+                $client.Close()
+                continue
+            }
+
+            $code = New-VerificationCode
+            $script:AuthCodes[$email] = @{
+                code = $code
+                expires_at = (Get-Date).ToUniversalTime().AddMinutes(10)
+            }
+            $sendResult = Send-VerificationEmail -ToEmail $email -Code $code
+            if ($sendResult.sent) {
+                $json = (@{ok = $true; message = "重置验证码已发送至您的邮箱，请查收"} | ConvertTo-Json -Compress)
+            } elseif ($sendResult.reason -eq "rate_limited") {
+                $json = (@{ok = $false; message = "发送太频繁，请 $($sendResult.wait_seconds) 秒后再试"} | ConvertTo-Json -Compress)
+            } else {
+                $json = (@{ok = $true; message = "验证码已发送（查看服务器日志）"} | ConvertTo-Json -Compress)
+            }
+            Write-AuthJsonResponse -Stream $stream -StatusCode 200 -Json $json
+            $client.Close()
+            continue
+        }
+
+        # POST /api/auth/reset-password
+        if ($method -eq "POST" -and $path -eq "/api/auth/reset-password") {
+            $body = if ($request.Body) { $request.Body | ConvertFrom-Json } else { $null }
+            $email = if ($body -and $body.email) { [string]$body.email } else { "" }
+            $code = if ($body -and $body.code) { [string]$body.code } else { "" }
+            $newPassword = if ($body -and $body.newPassword) { [string]$body.newPassword } else { "" }
+
+            if (-not $email -or -not $script:AuthUsers.ContainsKey($email)) {
+                $json = (@{ok = $false; message = "该邮箱未注册"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 400 -Json $json
+                $client.Close()
+                continue
+            }
+
+            if ($newPassword.Length -lt 6) {
+                $json = (@{ok = $false; message = "密码至少 6 位"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 400 -Json $json
+                $client.Close()
+                continue
+            }
+
+            if (-not $script:AuthCodes.ContainsKey($email)) {
+                $json = (@{ok = $false; message = "请先获取验证码"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 400 -Json $json
+                $client.Close()
+                continue
+            }
+
+            $stored = $script:AuthCodes[$email]
+            if ((Get-Date).ToUniversalTime() -gt [DateTime]$stored.expires_at) {
+                $script:AuthCodes.Remove($email)
+                $json = (@{ok = $false; message = "验证码已过期，请重新获取"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 400 -Json $json
+                $client.Close()
+                continue
+            }
+
+            if ($stored.code -ne $code) {
+                $json = (@{ok = $false; message = "验证码错误"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 400 -Json $json
+                $client.Close()
+                continue
+            }
+
+            $script:AuthUsers[$email].password_hash = Get-PasswordHash -Password $newPassword
+            $script:AuthCodes.Remove($email)
+            $json = (@{ok = $true; message = "密码已重置，请用新密码登录"} | ConvertTo-Json -Compress)
+            Write-AuthJsonResponse -Stream $stream -StatusCode 200 -Json $json
+            $client.Close()
+            continue
+        }
+
         # GET /api/auth/me
         if ($method -eq "GET" -and $path -eq "/api/auth/me") {
             $authHeader = Get-AuthHeaderValue -Headers $request.Headers

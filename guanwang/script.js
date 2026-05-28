@@ -449,6 +449,7 @@ window.addEventListener("load", () => {
           '<input name="password" type="password" placeholder="密码" required minlength="6" autocomplete="current-password">' +
           '<button type="submit">登录</button>' +
         '</form>' +
+        '<p class="auth-forgot"><a id="auth-forgot-link" href="javascript:;">忘记密码？</a></p>' +
         '<form id="auth-form-register" class="auth-form" hidden>' +
           '<input name="email" type="email" placeholder="邮箱" required autocomplete="email">' +
           '<input name="password" type="password" placeholder="密码（至少 6 位）" required minlength="6">' +
@@ -462,6 +463,17 @@ window.addEventListener("load", () => {
           '<input name="code" type="text" placeholder="6 位验证码" required pattern="[0-9]{6}" maxlength="6" inputmode="numeric" autocomplete="one-time-code">' +
           '<button type="submit">验证并激活</button>' +
         '</form>' +
+        '<form id="auth-form-forgot" class="auth-form" hidden>' +
+          '<p class="auth-verify-hint">输入注册邮箱，我们将发送重置验证码</p>' +
+          '<input name="email" type="email" placeholder="注册邮箱" required autocomplete="email">' +
+          '<button type="submit">获取重置验证码</button>' +
+        '</form>' +
+        '<form id="auth-form-reset" class="auth-form" hidden>' +
+          '<p class="auth-verify-hint">重置验证码已发送至 <strong id="auth-reset-target"></strong></p>' +
+          '<input name="code" type="text" placeholder="6 位验证码" required pattern="[0-9]{6}" maxlength="6" inputmode="numeric" autocomplete="one-time-code">' +
+          '<input name="newPassword" type="password" placeholder="新密码（至少 6 位）" required minlength="6">' +
+          '<button type="submit">重置密码</button>' +
+        '</form>' +
         '<p class="auth-error" id="auth-error-msg" hidden></p>' +
       '</div>' +
     '</div>';
@@ -474,10 +486,15 @@ window.addEventListener("load", () => {
   var verifyForm = document.getElementById("auth-form-verify");
   var errorEl = document.getElementById("auth-error-msg");
   var verifyTarget = document.getElementById("auth-verify-target");
+  var forgotForm = document.getElementById("auth-form-forgot");
+  var resetForm = document.getElementById("auth-form-reset");
+  var forgotLink = document.getElementById("auth-forgot-link");
+  var resetTarget = document.getElementById("auth-reset-target");
   var tabButtons = Array.from(overlay.querySelectorAll("[data-auth-tab]"));
   var closeBtn = overlay.querySelector(".auth-dialog-close");
   var backdrop = overlay.querySelector(".auth-overlay-backdrop");
   var pendingEmail = "";
+  var pendingForgotEmail = "";
 
   function showError(msg) {
     errorEl.textContent = msg;
@@ -495,6 +512,8 @@ window.addEventListener("load", () => {
     loginForm.reset();
     registerForm.reset();
     verifyForm.reset();
+    forgotForm.reset();
+    resetForm.reset();
   }
 
   function hideOverlay() {
@@ -506,6 +525,9 @@ window.addEventListener("load", () => {
     loginForm.hidden = false;
     registerForm.hidden = true;
     verifyForm.hidden = true;
+    forgotForm.hidden = true;
+    resetForm.hidden = true;
+    forgotLink.style.display = "";
   }
 
   function switchTab(tabName) {
@@ -516,6 +538,9 @@ window.addEventListener("load", () => {
     loginForm.hidden = tabName !== "login";
     registerForm.hidden = tabName !== "register";
     verifyForm.hidden = true;
+    forgotForm.hidden = true;
+    resetForm.hidden = true;
+    forgotLink.style.display = tabName === "login" ? "" : "none";
   }
 
   function saveAuth(token, user) {
@@ -669,6 +694,69 @@ window.addEventListener("load", () => {
       .catch(function () {
         showError("网络错误，请稍后重试");
       });
+  });
+
+  // Forgot password link
+  forgotLink.addEventListener("click", function (e) {
+    e.preventDefault();
+    switchTab("");
+    tabButtons.forEach(function (btn) { btn.classList.remove("is-active"); });
+    loginForm.hidden = true;
+    registerForm.hidden = true;
+    verifyForm.hidden = true;
+    forgotForm.hidden = false;
+    resetForm.hidden = true;
+    forgotLink.style.display = "none";
+    clearError();
+  });
+
+  forgotForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var email = (forgotForm.querySelector('[name=email]') || {}).value;
+    if (!email) return;
+    pendingForgotEmail = email.trim();
+    fetch(resolveAuthBaseUrl() + "/api/auth/forgot", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: pendingForgotEmail })
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data.ok) {
+          resetTarget.textContent = pendingForgotEmail;
+          forgotForm.hidden = true;
+          resetForm.hidden = false;
+          clearError();
+        } else {
+          showError(data.message || "发送失败");
+        }
+      })
+      .catch(function () { showError("网络错误，请稍后重试"); });
+  });
+
+  resetForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var code = (resetForm.querySelector('[name=code]') || {}).value;
+    var newPw = (resetForm.querySelector('[name=newPassword]') || {}).value;
+    if (!code || !newPw) return;
+    fetch(resolveAuthBaseUrl() + "/api/auth/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: pendingForgotEmail, code: code.trim(), newPassword: newPw })
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data.ok) {
+          clearError();
+          alert("密码已重置，请用新密码登录");
+          switchTab("login");
+          forgotForm.reset();
+          resetForm.reset();
+        } else {
+          showError(data.message || "重置失败");
+        }
+      })
+      .catch(function () { showError("网络错误，请稍后重试"); });
   });
 
   // Check existing auth on page load
