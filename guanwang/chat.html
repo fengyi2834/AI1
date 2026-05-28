@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+  <title>亿库 AI 客服</title>
+  <meta name="description" content="亿库硅藻板 AI 在线客服">
+  <link rel="stylesheet" href="./styles.css?v=20260527">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+    body { background: #f0f2f5; display: flex; flex-direction: column; }
+
+    .chat-page { display: flex; flex-direction: column; height: 100%; max-width: 500px; margin: 0 auto; width: 100%; background: #fff; }
+
+    .chat-page-head {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; background: linear-gradient(135deg, #173244, #25524a); color: #fff;
+      flex-shrink: 0;
+    }
+    .chat-page-head .back-btn {
+      width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(255,255,255,0.15);
+      color: #fff; font-size: 18px; cursor: pointer; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .chat-page-head .head-info { flex: 1; min-width: 0; }
+    .chat-page-head .head-info strong { font-size: 16px; display: block; }
+    .chat-page-head .head-info span { font-size: 11px; color: rgba(255,255,255,0.7); }
+    .chat-page-head .auth-btn {
+      padding: 6px 14px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.6);
+      background: transparent; color: #fff; font-size: 13px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    }
+    .chat-page-head .auth-btn.is-logged-in { background: rgba(255,255,255,0.2); border-color: transparent; }
+
+    .chat-page-quick {
+      display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px;
+      border-bottom: 1px solid #eee; flex-shrink: 0; overflow-x: auto;
+    }
+    .chat-page-quick button {
+      padding: 6px 12px; border-radius: 16px; border: 1px solid #d0d5dd; background: #f9fafb;
+      font-size: 12px; white-space: nowrap; cursor: pointer;
+    }
+
+    .chat-page-body { flex: 1; overflow-y: auto; padding: 12px; -webkit-overflow-scrolling: touch; }
+
+    .chat-page-body .msg { display: flex; margin-bottom: 14px; }
+    .chat-page-body .msg.user { justify-content: flex-end; }
+    .chat-page-body .msg .bubble {
+      max-width: 82%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.6; word-break: break-word;
+    }
+    .chat-page-body .msg.assistant .bubble { background: #f0f4f8; border-bottom-left-radius: 4px; }
+    .chat-page-body .msg.user .bubble { background: var(--site-primary, #3370FF); color: #fff; border-bottom-right-radius: 4px; }
+    .chat-page-body .msg img { max-width: 160px; max-height: 160px; border-radius: 10px; margin-bottom: 6px; display: block; }
+
+    .chat-page-form {
+      display: flex; gap: 6px; align-items: flex-end; padding: 10px 12px;
+      border-top: 1px solid #eee; flex-shrink: 0; background: #fff;
+    }
+    .chat-page-form .img-preview-bar {
+      display: none; width: 100%; padding: 6px 10px; background: #e8f5e9; border-radius: 10px;
+      font-size: 12px; align-items: center; gap: 8px; margin-bottom: 6px;
+    }
+    .chat-page-form .img-preview-bar.show { display: flex; }
+    .chat-page-form .img-preview-bar .remove { cursor: pointer; color: #c00; font-weight: bold; flex-shrink: 0; }
+    .chat-page-form input {
+      flex: 1; padding: 10px 14px; border: 1px solid #d0d5dd; border-radius: 20px;
+      font-size: 14px; outline: none;
+    }
+    .chat-page-form input:focus { border-color: var(--site-primary, #3370FF); }
+    .chat-page-form .img-btn {
+      width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--site-primary, #3370FF);
+      background: transparent; color: var(--site-primary, #3370FF); font-size: 18px;
+      cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    }
+    .chat-page-form .img-btn.has-img { background: var(--site-primary, #3370FF); color: #fff; }
+    .chat-page-form .send-btn {
+      padding: 10px 20px; border-radius: 20px; border: none; background: var(--site-primary, #3370FF);
+      color: #fff; font-size: 14px; cursor: pointer; flex-shrink: 0;
+    }
+    .chat-page-form .send-btn:disabled { opacity: 0.5; }
+
+    .auth-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.45); }
+    .auth-dialog { background: #fff; border-radius: 16px; padding: 24px; width: 90%; max-width: 360px; }
+    .auth-dialog input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #d0d5dd; border-radius: 10px; font-size: 14px; }
+    .auth-dialog button { width: 100%; padding: 12px; border-radius: 10px; border: none; background: var(--site-primary, #3370FF); color: #fff; font-size: 15px; cursor: pointer; }
+    .auth-dialog .auth-tabs { display: flex; gap: 0; margin-bottom: 16px; }
+    .auth-dialog .auth-tab { flex: 1; padding: 8px; text-align: center; border-bottom: 2px solid #eee; cursor: pointer; font-size: 14px; color: #888; }
+    .auth-dialog .auth-tab.active { border-bottom-color: var(--site-primary, #3370FF); color: var(--site-primary, #3370FF); font-weight: 600; }
+    .auth-dialog .auth-error { color: #e00; font-size: 12px; margin-bottom: 8px; }
+    .auth-dialog .auth-hint { font-size: 12px; color: #888; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <div class="chat-page">
+    <div class="chat-page-head">
+      <button class="back-btn" onclick="history.back()">←</button>
+      <div class="head-info">
+        <strong>亿库 AI 客服</strong>
+        <span>即时响应 · 在线咨询</span>
+      </div>
+      <button class="auth-btn" id="authBtn" title="登录">登录</button>
+    </div>
+
+    <div class="chat-page-quick">
+      <button data-q="你们产品适合哪些场景？">适用场景</button>
+      <button data-q="学校医院能不能用？">学校/医院</button>
+      <button data-q="规格有哪些？">产品规格</button>
+      <button data-q="怎么报价？">如何报价</button>
+      <button data-q="如何联系销售？">联系销售</button>
+    </div>
+
+    <div class="chat-page-body" id="chatBody"></div>
+
+    <div class="chat-page-form">
+      <div>
+        <div class="img-preview-bar" id="imgPreview">
+          <span id="imgName"></span>
+          <span class="remove" id="imgRemove">✕</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:flex-end">
+          <label class="img-btn" id="imgBtn" title="发送图片">📷<input type="file" accept="image/*" style="display:none" id="imgInput"></label>
+          <input type="text" id="msgInput" placeholder="请输入你的问题" autocomplete="off">
+          <button class="send-btn" id="sendBtn">发送</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth Modal -->
+  <div class="auth-overlay" id="authOverlay" hidden>
+    <div class="auth-dialog">
+      <div class="auth-tabs">
+        <div class="auth-tab active" data-tab="login">登录</div>
+        <div class="auth-tab" data-tab="register">注册</div>
+      </div>
+      <p class="auth-error" id="authError" hidden></p>
+      <form id="loginForm"><input type="email" placeholder="邮箱" required><input type="password" placeholder="密码" required minlength="6"><button type="submit">登录</button></form>
+      <form id="registerForm" hidden><input type="email" placeholder="邮箱" required><input type="password" placeholder="密码（至少6位）" required minlength="6"><input type="text" placeholder="昵称（选填）"><button type="submit">获取验证码</button></form>
+      <form id="verifyForm" hidden><p class="auth-hint">验证码已发送至 <strong id="verifyEmail"></strong>，如未收到请检查垃圾邮件</p><input type="text" placeholder="6位验证码" required maxlength="6"><button type="submit">验证并激活</button></form>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      var STORAGE_TOKEN = 'yiku_auth_token';
+      var STORAGE_USER = 'yiku_auth_user';
+      var WELCOME = '你好，我是亿库 AI 客服。可以咨询产品适用场景、规格、报价方式和销售联系方式。';
+
+      var body = document.getElementById('chatBody');
+      var input = document.getElementById('msgInput');
+      var sendBtn = document.getElementById('sendBtn');
+      var authBtn = document.getElementById('authBtn');
+      var authOverlay = document.getElementById('authOverlay');
+      var authError = document.getElementById('authError');
+      var loginForm = document.getElementById('loginForm');
+      var registerForm = document.getElementById('registerForm');
+      var verifyForm = document.getElementById('verifyForm');
+      var verifyEmail = document.getElementById('verifyEmail');
+      var imgInput = document.getElementById('imgInput');
+      var imgBtn = document.getElementById('imgBtn');
+      var imgPreview = document.getElementById('imgPreview');
+      var imgName = document.getElementById('imgName');
+      var imgRemove = document.getElementById('imgRemove');
+
+      var token = localStorage.getItem(STORAGE_TOKEN);
+      var user = JSON.parse(localStorage.getItem(STORAGE_USER) || 'null');
+      var conversationId = 'chat-' + Math.random().toString(36).slice(2, 14);
+      var userId = token ? ('user-' + (user ? user.email : 'u')) : ('anon-' + Math.random().toString(36).slice(2, 12));
+      var currentImg = null, currentImgName = '', loading = false, pendingEmail = '';
+
+      function api(path, data) {
+        var opts = { method: data ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json' } };
+        if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+        if (data) opts.body = JSON.stringify(data);
+        return fetch(path, opts).then(function(r) { return r.json(); });
+      }
+
+      function addMsg(role, text, imgUrl) {
+        var row = document.createElement('div');
+        row.className = 'msg ' + role;
+        var bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        if (imgUrl) { var im = document.createElement('img'); im.src = imgUrl; bubble.appendChild(im); }
+        if (text) { var p = document.createElement('p'); p.textContent = text; bubble.appendChild(p); }
+        row.appendChild(bubble);
+        body.appendChild(row);
+        body.scrollTop = body.scrollHeight;
+      }
+
+      function clearImg() {
+        currentImg = null; currentImgName = '';
+        imgInput.value = '';
+        imgBtn.classList.remove('has-img');
+        imgPreview.classList.remove('show');
+      }
+
+      function updateAuthUI() {
+        var u = JSON.parse(localStorage.getItem(STORAGE_USER) || 'null');
+        if (u) {
+          authBtn.textContent = u.nickname || u.email || '已登录';
+          authBtn.classList.add('is-logged-in');
+          userId = 'user-' + (u.email || 'u');
+        } else {
+          authBtn.textContent = '登录';
+          authBtn.classList.remove('is-logged-in');
+          userId = 'anon-' + Math.random().toString(36).slice(2, 12);
+        }
+      }
+
+      function showAuthError(msg) { authError.textContent = msg; authError.hidden = false; }
+      function hideAuthError() { authError.hidden = true; }
+
+      function switchTab(tab) {
+        var tabs = document.querySelectorAll('.auth-tab');
+        tabs.forEach(function(t) { t.classList.toggle('active', t.getAttribute('data-tab') === tab); });
+        loginForm.hidden = tab !== 'login';
+        registerForm.hidden = tab !== 'register';
+        verifyForm.hidden = true;
+        hideAuthError();
+      }
+
+      authBtn.addEventListener('click', function() {
+        if (authBtn.classList.contains('is-logged-in')) {
+          if (confirm('确定退出登录？')) {
+            localStorage.removeItem(STORAGE_TOKEN);
+            localStorage.removeItem(STORAGE_USER);
+            updateAuthUI();
+          }
+          return;
+        }
+        authOverlay.hidden = false;
+        switchTab('login');
+        loginForm.reset();
+        registerForm.reset();
+        verifyForm.reset();
+      });
+
+      document.querySelectorAll('.auth-tab').forEach(function(t) {
+        t.addEventListener('click', function() { switchTab(t.getAttribute('data-tab')); });
+      });
+
+      authOverlay.addEventListener('click', function(e) {
+        if (e.target === authOverlay) { authOverlay.hidden = true; }
+      });
+
+      loginForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var email = loginForm.querySelector('[type=email]').value.trim();
+        var pw = loginForm.querySelector('[type=password]').value;
+        api('/api/auth/login', { email: email, password: pw }).then(function(d) {
+          if (d.ok) {
+            token = d.token;
+            localStorage.setItem(STORAGE_TOKEN, token);
+            localStorage.setItem(STORAGE_USER, JSON.stringify(d.user));
+            updateAuthUI();
+            authOverlay.hidden = true;
+          } else {
+            showAuthError(d.message || '登录失败');
+          }
+        });
+      });
+
+      registerForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var email = registerForm.querySelector('[type=email]').value.trim();
+        var pw = registerForm.querySelector('[type=password]').value;
+        pendingEmail = email;
+        api('/api/auth/register', { email: email, password: pw }).then(function(d) {
+          if (d.ok) {
+            verifyEmail.textContent = email;
+            loginForm.hidden = true;
+            registerForm.hidden = true;
+            verifyForm.hidden = false;
+            hideAuthError();
+          } else {
+            showAuthError(d.message || '注册失败');
+          }
+        });
+      });
+
+      verifyForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var code = verifyForm.querySelector('input').value.trim();
+        api('/api/auth/verify', { email: pendingEmail, code: code }).then(function(d) {
+          if (d.ok && d.token) {
+            token = d.token;
+            localStorage.setItem(STORAGE_TOKEN, token);
+            api('/api/auth/login', { email: pendingEmail, password: '' }).then(function(ld) {
+              if (ld.ok) {
+                localStorage.setItem(STORAGE_USER, JSON.stringify(ld.user));
+              }
+              updateAuthUI();
+              authOverlay.hidden = true;
+              switchTab('login');
+            });
+          } else {
+            showAuthError(d.message || '验证失败');
+          }
+        });
+      });
+
+      imgInput.addEventListener('change', function() {
+        var f = imgInput.files[0];
+        if (!f) return;
+        if (!['image/png','image/jpeg','image/webp'].includes(f.type)) { alert('仅支持 PNG/JPEG/WebP'); return; }
+        if (f.size > 10*1024*1024) { alert('图片不超过10MB'); return; }
+        var reader = new FileReader();
+        reader.onload = function() {
+          currentImg = reader.result;
+          currentImgName = f.name;
+          imgBtn.classList.add('has-img');
+          imgName.textContent = f.name;
+          imgPreview.classList.add('show');
+          input.focus();
+        };
+        reader.readAsDataURL(f);
+      });
+
+      imgRemove.addEventListener('click', clearImg);
+
+      function send() {
+        var text = input.value.trim();
+        if ((!text && !currentImg) || loading) return;
+        loading = true;
+        var imgToSend = currentImg;
+        var imgNameToSend = currentImgName;
+        input.value = '';
+        addMsg('user', text || '发送了一张图片', imgToSend);
+        sendBtn.disabled = true;
+        sendBtn.textContent = '...';
+        clearImg();
+
+        api('/api/ai/chat', {
+          channel: 'web', question: text, externalUserId: userId,
+          conversationId: conversationId, sessionId: 'm-' + Math.random().toString(36).slice(2, 10),
+          imageDataUrl: imgToSend || undefined, imageName: imgNameToSend || undefined,
+          history: []
+        }).then(function(d) {
+          if (d.error === 'login_required') {
+            addMsg('assistant', '免费咨询次数已用完，请登录后继续。');
+            authOverlay.hidden = false;
+          } else {
+            addMsg('assistant', d.answer || '暂时没有获取到回复。');
+          }
+        }).catch(function() {
+          addMsg('assistant', '网络异常，请稍后重试。');
+        }).finally(function() {
+          loading = false;
+          sendBtn.disabled = false;
+          sendBtn.textContent = '发送';
+        });
+      }
+
+      sendBtn.addEventListener('click', send);
+      input.addEventListener('keydown', function(e) { if (e.key === 'Enter') send(); });
+
+      document.querySelectorAll('.chat-page-quick button').forEach(function(b) {
+        b.addEventListener('click', function() { input.value = b.getAttribute('data-q'); send(); });
+      });
+
+      updateAuthUI();
+      addMsg('assistant', WELCOME);
+
+      var q = new URLSearchParams(window.location.search).get('q');
+      if (q) {
+        input.value = q;
+        send();
+      }
+    })();
+  </script>
+</body>
+</html>

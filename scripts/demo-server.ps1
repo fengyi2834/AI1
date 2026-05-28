@@ -10,7 +10,8 @@
     [string]$VisionPromptTemplate = ".\config\fastgpt\prompts\demo_vision_system_prompt.md",
     [string]$MemoryRoot = ".\data\runtime\chat_memory",
     [string]$LeadLogPath = ".\data\logs\lead_requests.jsonl",
-    [string]$HandoffLogPath = ".\data\logs\handoff_requests.jsonl"
+    [string]$HandoffLogPath = ".\data\logs\handoff_requests.jsonl",
+    [string]$RateLimitPath = ".\data\runtime\rate_limits.json"
 )
 
 $ErrorActionPreference = "Stop"
@@ -513,6 +514,10 @@ function Save-ConversationStateDocument {
 }
 
 function Save-SessionStores {
+    if ($script:SkipPersistence) {
+        return
+    }
+
     foreach ($item in @($script:SessionProfiles.GetEnumerator())) {
         Save-UserProfileDocument -Profile $item.Value
     }
@@ -732,9 +737,13 @@ function Get-Or-CreateUserProfile {
 
     $key = Get-ChannelProfileKey -Channel $Channel -ExternalUserId $ExternalUserId
     if (-not $script:SessionProfiles.ContainsKey($key)) {
-        $path = Get-UserProfilePath -Channel $Channel -ExternalUserId $ExternalUserId
-        $record = Read-JsonHashtableFile -Path $path -RootKey ""
-        $script:SessionProfiles[$key] = Normalize-UserProfile -Record $record -Channel $Channel -ExternalUserId $ExternalUserId
+        if ($script:SkipPersistence) {
+            $script:SessionProfiles[$key] = Normalize-UserProfile -Record $null -Channel $Channel -ExternalUserId $ExternalUserId
+        } else {
+            $path = Get-UserProfilePath -Channel $Channel -ExternalUserId $ExternalUserId
+            $record = Read-JsonHashtableFile -Path $path -RootKey ""
+            $script:SessionProfiles[$key] = Normalize-UserProfile -Record $record -Channel $Channel -ExternalUserId $ExternalUserId
+        }
     }
 
     return $script:SessionProfiles[$key]
@@ -750,9 +759,13 @@ function Get-Or-CreateConversationState {
 
     $key = Get-ConversationStoreKey -Channel $Channel -ExternalUserId $ExternalUserId -ConversationId $ConversationId
     if (-not $script:SessionHistories.ContainsKey($key)) {
-        $path = Get-ConversationMemoryPath -Channel $Channel -ExternalUserId $ExternalUserId -ConversationId $ConversationId
-        $record = Read-JsonHashtableFile -Path $path -RootKey ""
-        $script:SessionHistories[$key] = Normalize-ConversationState -Record $record -Channel $Channel -ExternalUserId $ExternalUserId -ConversationId $ConversationId -SessionId $SessionId
+        if ($script:SkipPersistence) {
+            $script:SessionHistories[$key] = Normalize-ConversationState -Record $null -Channel $Channel -ExternalUserId $ExternalUserId -ConversationId $ConversationId -SessionId $SessionId
+        } else {
+            $path = Get-ConversationMemoryPath -Channel $Channel -ExternalUserId $ExternalUserId -ConversationId $ConversationId
+            $record = Read-JsonHashtableFile -Path $path -RootKey ""
+            $script:SessionHistories[$key] = Normalize-ConversationState -Record $record -Channel $Channel -ExternalUserId $ExternalUserId -ConversationId $ConversationId -SessionId $SessionId
+        }
     }
     return $script:SessionHistories[$key]
 }
@@ -2666,14 +2679,14 @@ function Invoke-VisionModelChat {
 用户问题：$questionText
 $imageHint
 
-补充要求：
-1. 先提炼图片里能明确确认的关键信息。
-2. 如果图片信息不足、看不清或无法支持完整结论，要直接说明。
-3. 输出尽量简洁，优先给可用于后续问答的图片要点，不要写成长篇说明。
-4. 只能根据图片和已知事实回答，不要自己脑补。
-5. 如果用户没有明确提问，就只总结图片里能确认的内容，不要额外给方案、建议或推断。
+你是亿库硅藻板的销售顾问。请仔细查看用户发来的图片，然后：
+1. 先描述图片里能明确看到的内容（场景、环境、人物、物品等）
+2. 结合用户的问题，直接给出回答。如果问题涉及硅藻板是否适用，就根据图片场景给出专业判断
+3. 如果图片信息不足以给出完整答案，诚实说明哪里看不清，并追问一个最关键的信息
+4. 回答要自然、口语化，像微信里跟客户聊天一样。控制在 3-6 句
+5. 不要编造图片里没有的内容
 
-已知事实：
+已知产品事实：
 $knowledgeText
 "@
 
@@ -2847,7 +2860,8 @@ function Get-ChatAnswer {
         [System.Collections.Generic.List[string]]$KnowledgeRecords,
         [string]$PromptTemplateText,
         [string]$RagPromptTemplateText,
-        [string]$VisionPromptTemplateText
+        [string]$VisionPromptTemplateText,
+        [bool]$IsLoggedIn = $false
     )
 
     $channelName = if ($Channel) { $Channel } else { "web" }
@@ -2858,6 +2872,19 @@ function Get-ChatAnswer {
 
     $userProfile = Get-Or-CreateUserProfile -Channel $channelName -ExternalUserId $externalId
     $conversationState = Get-Or-CreateConversationState -Channel $channelName -ExternalUserId $externalId -ConversationId $conversationIdValue -SessionId $sessionIdValue
+
+    if (-not $IsLoggedIn) {
+        $key = Get-ChannelProfileKey -Channel $channelName -ExternalUserId $externalId
+        if ($script:SessionProfiles.ContainsKey($key)) {
+            $script:SessionProfiles[$key] = Normalize-UserProfile -Record $null -Channel $channelName -ExternalUserId $externalId
+            $userProfile = $script:SessionProfiles[$key]
+        }
+        $convKey = Get-ConversationStoreKey -Channel $channelName -ExternalUserId $externalId -ConversationId $conversationIdValue
+        if ($script:SessionHistories.ContainsKey($convKey)) {
+            $script:SessionHistories[$convKey] = Normalize-ConversationState -Record $null -Channel $channelName -ExternalUserId $externalId -ConversationId $conversationIdValue -SessionId $sessionIdValue
+            $conversationState = $script:SessionHistories[$convKey]
+        }
+    }
     if ($conversationState.turns.Count -eq 0 -and $History) {
         foreach ($item in @($History | Select-Object -Last 6)) {
             $role = (($item.role | Out-String).Trim())
@@ -2980,28 +3007,10 @@ function Get-ChatAnswer {
 
         $visionAnswer = Invoke-VisionModelChat -Question $Question -ImageDataUrl $ImageDataUrl -ImageName $ImageName -SystemPrompt $visionSystemPrompt -Knowledge $knowledge -EnvMap $envMap
         if ($visionAnswer) {
-            $imageSummary = ($visionAnswer.answer | Out-String).Trim()
-
-            if (-not [string]::IsNullOrWhiteSpace($Question)) {
-                $fusionQuery = "$Question`n图片识别要点：$imageSummary"
-                $fusionFacts = Get-RelevantFacts -Question $fusionQuery -FaqEntries $FaqEntries -KnowledgeRecords $KnowledgeRecords -MaxFacts 8
-                $fusionKnowledge = if ($fusionFacts.Count -gt 0) {
-                    ($fusionFacts | ForEach-Object { "- $_" }) -join "`n"
-                } else {
-                    $knowledge
-                }
-
-                $fusionAnswer = Invoke-DirectGroundedTextChat -Question $Question -SystemPrompt $systemPrompt -Knowledge $fusionKnowledge -ImageSummary $imageSummary -EnvMap $envMap -ContextBundleText $modelContextText -RagPromptTemplateText $RagPromptTemplateText -DirectTextModel (Get-ImageFlowTextModel -EnvMap $envMap) -Temperature 0.18
-                if ($fusionAnswer) {
-                    $result = New-ChatAnswerResult -Question $Question -Answer $fusionAnswer -Mode "vision_rag"
-                    return Finalize-ChatResult -Channel $channelName -ExternalUserId $externalId -ConversationId $conversationIdValue -SessionId $sessionIdValue -Question $Question -HasImage $hasImage -RawResult $result -UserProfile $userProfile -ConversationState $conversationState
-                }
-            }
-
-            $result = New-ChatAnswerResult -Question $questionForRetrieval -Answer $imageSummary -Mode $visionAnswer.mode
+            $visionResponse = ($visionAnswer.answer | Out-String).Trim()
+            $result = New-ChatAnswerResult -Question $Question -Answer $visionResponse -Mode "vision_direct"
             return Finalize-ChatResult -Channel $channelName -ExternalUserId $externalId -ConversationId $conversationIdValue -SessionId $sessionIdValue -Question $Question -HasImage $hasImage -RawResult $result -UserProfile $userProfile -ConversationState $conversationState
-        }
-    }
+        }    }
 
     if ($chatBackendMode -in @("fastgpt", "fastgpt_prefer")) {
         $cachedFastGptAnswer = Get-CachedFastGptAnswer -Question $Question -Scope $conversationCacheScope
@@ -3224,6 +3233,271 @@ $faqEntries = Get-FaqEntries -Path $faqCsvPath
 $imageCatalogEntries = Get-ImageCatalogEntries -Path $imageCatalogResolvedPath
 $knowledgeRecords = Get-KnowledgeRecords -Root $knowledgePath
 Initialize-SessionStores
+$script:SkipPersistence = $false
+
+
+# ====== Rate limit initialization ======
+$resolvedRateLimitPath = Resolve-ProjectRelativePath -ConfiguredPath $RateLimitPath
+
+# ====== Auth state (in-memory) ======
+$script:AuthUsers = @{}          # email -> @{id, email, password_hash, nickname, company, phone, created_at, last_login, verified}
+$script:AuthCodes = @{}          # email -> @{code, expires_at}
+$script:AuthSessions = @{}       # token -> @{email, created_at, expires_at, ip, user_agent}
+$script:AuthEmailCooldown = @{}  # email -> DateTime (last send time, to rate-limit email sending)
+$script:AuthUserIdCounter = 0
+
+# ====== Device rate limit state (in-memory + file persisted) ======
+$script:DeviceRateLimits = @{}
+
+function Initialize-DeviceRateLimits {
+    param([string]$FilePath)
+
+    $script:RateLimitFilePath = $FilePath
+    $parent = Split-Path -Parent $FilePath
+    if (-not (Test-Path -LiteralPath $parent)) {
+        New-Item -ItemType Directory -Path $parent -Force | Out-Null
+    }
+
+    if (Test-Path -LiteralPath $FilePath) {
+        try {
+            $json = Get-Content -LiteralPath $FilePath -Raw -Encoding UTF8
+            $data = $json | ConvertFrom-Json
+            $now = [DateTime]::UtcNow
+            foreach ($entry in $data.PSObject.Properties) {
+                $val = $entry.Value
+                $firstTime = [DateTime]$val.first_request_time
+                if (($now - $firstTime).TotalHours -lt 24) {
+                    $script:DeviceRateLimits[$entry.Name] = @{
+                        count = [int]$val.count
+                        first_request_time = $firstTime
+                        blocked = [bool]$val.blocked
+                    }
+                }
+            }
+        } catch {
+            $script:DeviceRateLimits = @{}
+        }
+    }
+}
+
+Initialize-DeviceRateLimits -FilePath $resolvedRateLimitPath
+
+function Save-DeviceRateLimits {
+    if (-not $script:RateLimitFilePath) { return }
+    try {
+        $data = @{}
+        foreach ($key in $script:DeviceRateLimits.Keys) {
+            $data[$key] = $script:DeviceRateLimits[$key]
+        }
+        $json = $data | ConvertTo-Json -Depth 5
+        Set-Content -LiteralPath $script:RateLimitFilePath -Value $json -Encoding UTF8
+    } catch {
+        # Silently ignore save errors
+    }
+}
+
+function Test-DeviceRateLimit {
+    param([string]$ExternalUserId, [string]$UserAgent, [string]$ClientIP)
+
+    $fingerprintRaw = "$UserAgent|$ClientIP"
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    $hashBytes = $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($fingerprintRaw))
+    $fingerprint = [System.BitConverter]::ToString($hashBytes).Replace("-", "").ToLowerInvariant()
+    $sha256.Dispose()
+
+    $now = [DateTime]::UtcNow
+
+    if ($script:DeviceRateLimits.ContainsKey($fingerprint)) {
+        $entry = $script:DeviceRateLimits[$fingerprint]
+        # Reset if 24 hours have passed since first request
+        if (($now - $entry.first_request_time).TotalHours -ge 24) {
+            $entry.count = 1
+            $entry.first_request_time = $now
+            $entry.blocked = $false
+        } else {
+            $entry.count += 1
+        }
+        if ($entry.count -gt 5) {
+            $entry.blocked = $true
+        }
+    } else {
+        $script:DeviceRateLimits[$fingerprint] = @{
+            count = 1
+            first_request_time = $now
+            blocked = $false
+        }
+    }
+
+    Save-DeviceRateLimits
+
+    $entry = $script:DeviceRateLimits[$fingerprint]
+    return @{
+        Blocked = $entry.blocked
+        Count = $entry.count
+        Remaining = [Math]::Max(0, 5 - $entry.count)
+    }
+}
+
+function Get-AuthSecret {
+    return "yiku-demo-auth-secret-2024"
+}
+
+function Get-PasswordHash {
+    param([string]$Password)
+
+    $secret = [System.Text.Encoding]::UTF8.GetBytes((Get-AuthSecret))
+    $hmac = New-Object System.Security.Cryptography.HMACSHA256
+    $hmac.Key = $secret
+    $hash = $hmac.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($Password))
+    return [System.Convert]::ToBase64String($hash)
+}
+
+function Test-IsValidEmail {
+    param([string]$Email)
+
+    if (-not $Email) {
+        return $false
+    }
+
+    return $Email -match '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+}
+
+function New-VerificationCode {
+    return (Get-Random -Minimum 100000 -Maximum 999999).ToString()
+}
+
+function Send-VerificationEmail {
+    param([string]$ToEmail, [string]$Code)
+
+    # Rate limit: 60s cooldown per email address
+    if ($script:AuthEmailCooldown.ContainsKey($ToEmail)) {
+        $elapsed = (Get-Date) - $script:AuthEmailCooldown[$ToEmail]
+        if ($elapsed.TotalSeconds -lt 60) {
+            $waitSeconds = [math]::Ceiling(60 - $elapsed.TotalSeconds)
+            Write-Host "[EMAIL] 频率限制: $ToEmail 需等待 ${waitSeconds}s" -ForegroundColor DarkYellow
+            return @{ sent = $false; reason = "rate_limited"; wait_seconds = $waitSeconds }
+        }
+    }
+    $script:AuthEmailCooldown[$ToEmail] = Get-Date
+
+    $smtpServer  = $env:SMTP_SERVER
+    $smtpPort    = if ($env:SMTP_PORT) { [int]$env:SMTP_PORT } else { 465 }
+    $smtpUser    = $env:SMTP_USER
+    $smtpPass    = $env:SMTP_PASS
+    $fromEmail   = if ($env:SMTP_FROM) { $env:SMTP_FROM } else { $smtpUser }
+    $fromName    = if ($env:SMTP_FROM_NAME) { $env:SMTP_FROM_NAME } else { "广西亿库硅藻板" }
+
+    # SMTP not configured → fall back to console log
+    if (-not $smtpServer -or -not $smtpUser -or -not $smtpPass) {
+        Write-Host "===== [AUTH] 验证码（$ToEmail）：$Code =====" -ForegroundColor Yellow
+        Write-Host "[EMAIL] SMTP 未配置，验证码已输出到控制台" -ForegroundColor DarkYellow
+        return @{ sent = $false; reason = "smtp_not_configured" }
+    }
+
+    try {
+        $mail = New-Object System.Net.Mail.MailMessage
+        $mail.From = New-Object System.Net.Mail.MailAddress($fromEmail, $fromName)
+        $mail.To.Add($ToEmail)
+        $mail.Subject = "邮箱验证码 - 广西亿库硅藻板"
+        $mail.Body = @"
+您好！
+
+您的验证码是：$Code
+
+该验证码 10 分钟内有效。如非本人操作，请忽略此邮件。
+
+——
+广西亿库光养硅藻环保科技有限公司
+"@
+        $mail.BodyEncoding = [System.Text.Encoding]::UTF8
+        $mail.SubjectEncoding = [System.Text.Encoding]::UTF8
+        $mail.IsBodyHtml = $false
+
+        $smtp = New-Object System.Net.Mail.SmtpClient($smtpServer, $smtpPort)
+        $smtp.EnableSsl = $true
+        $smtp.DeliveryMethod = [System.Net.Mail.SmtpDeliveryMethod]::Network
+        $smtp.Credentials = New-Object System.Net.NetworkCredential($smtpUser, $smtpPass)
+        $smtp.Timeout = 10000
+        $smtp.Send($mail)
+
+        $mail.Dispose()
+        $smtp.Dispose()
+
+        Write-Host "[EMAIL] 验证码已发送至 $ToEmail" -ForegroundColor Green
+        return @{ sent = $true }
+    }
+    catch {
+        Write-Host "[EMAIL] 发送失败: $_" -ForegroundColor Red
+        Write-Host "===== [AUTH] 验证码（$ToEmail）：$Code =====" -ForegroundColor Yellow
+        return @{ sent = $false; reason = $_.Exception.Message }
+    }
+}
+
+function New-AuthToken {
+    return [guid]::NewGuid().ToString("N")
+}
+
+function Get-AuthUserByToken {
+    param([string]$Token)
+
+    if (-not $Token -or -not $script:AuthSessions.ContainsKey($Token)) {
+        return $null
+    }
+
+    $session = $script:AuthSessions[$Token]
+    if ((Get-Date).ToUniversalTime() -gt [DateTime]$session.expires_at) {
+        $script:AuthSessions.Remove($Token)
+        return $null
+    }
+
+    $email = $session.email
+    if (-not $script:AuthUsers.ContainsKey($email)) {
+        return $null
+    }
+
+    return $script:AuthUsers[$email]
+}
+
+function Get-AuthHeaderValue {
+    param($Headers)
+
+    if ($Headers.ContainsKey("Authorization")) {
+        return $Headers["Authorization"]
+    }
+    if ($Headers.ContainsKey("authorization")) {
+        return $Headers["authorization"]
+    }
+    return ""
+}
+
+function Write-AuthJsonResponse {
+    param(
+        [System.IO.Stream]$Stream,
+        [int]$StatusCode,
+        [string]$Json
+    )
+
+    $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($Json)
+    $statusText = switch ($StatusCode) {
+        200 { "OK" }
+        201 { "Created" }
+        400 { "Bad Request" }
+        401 { "Unauthorized" }
+        default { "OK" }
+    }
+
+    $header = "HTTP/1.1 $StatusCode $statusText`r`n" +
+        "Content-Type: application/json; charset=utf-8`r`n" +
+        "Content-Length: $($bodyBytes.Length)`r`n" +
+        "Access-Control-Allow-Origin: *`r`n" +
+        "Access-Control-Allow-Methods: GET, POST, OPTIONS`r`n" +
+        "Access-Control-Allow-Headers: Content-Type, Authorization`r`n" +
+        "Connection: close`r`n`r`n"
+    $headerBytes = [System.Text.Encoding]::ASCII.GetBytes($header)
+    $Stream.Write($headerBytes, 0, $headerBytes.Length)
+    $Stream.Write($bodyBytes, 0, $bodyBytes.Length)
+    $Stream.Flush()
+}
 
 $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Parse("127.0.0.1"), $Port)
 $listener.Start()
@@ -3256,7 +3530,46 @@ while ($true) {
             $imageDataUrl = if ($payload -and $payload.imageDataUrl) { [string]$payload.imageDataUrl } else { "" }
             $imageName = if ($payload -and $payload.imageName) { [string]$payload.imageName } else { "" }
             $modelOverride = if ($payload -and $payload.modelOverride) { [string]$payload.modelOverride } else { "" }
-            $chat = Get-ChatAnswer -Channel $channel -ExternalUserId $externalUserId -ConversationId $conversationId -SessionId $sessionId -Question $question -History $history -ImageDataUrl $imageDataUrl -ImageName $imageName -ModelOverride $modelOverride -EnvFilePath $resolvedEnvFile -FaqEntries $faqEntries -ImageCatalogEntries $imageCatalogEntries -KnowledgeRecords $knowledgeRecords -PromptTemplateText $promptTemplateText -RagPromptTemplateText $ragPromptTemplateText -VisionPromptTemplateText $visionPromptTemplateText
+
+            # ====== Device rate limit for unauthenticated users ======
+            $authHeader = Get-AuthHeaderValue -Headers $request.Headers
+            $isLoggedIn = $false
+            if ($authHeader -match "^Bearer\s+(.+)$") {
+                $authToken = $Matches[1]
+                $authUser = Get-AuthUserByToken -Token $authToken
+                if ($authUser) {
+                    $isLoggedIn = $true
+                }
+            }
+
+            if (-not $isLoggedIn) {
+                $userAgent = if ($request.Headers.ContainsKey("User-Agent")) { $request.Headers["User-Agent"] } else { "unknown" }
+                $clientIP = ""
+                if ($request.Headers.ContainsKey("X-Forwarded-For")) {
+                    $clientIP = ($request.Headers["X-Forwarded-For"] -split ",")[0].Trim()
+                } elseif ($request.Headers.ContainsKey("X-Real-IP")) {
+                    $clientIP = $request.Headers["X-Real-IP"]
+                } else {
+                    $clientIP = "127.0.0.1"
+                }
+
+                $rateResult = Test-DeviceRateLimit -ExternalUserId $externalUserId -UserAgent $userAgent -ClientIP $clientIP
+                if ($rateResult.Blocked) {
+                    $rateLimitJson = (@{
+                        error = "login_required"
+                        message = "免费咨询次数已用完，请登录后继续"
+                        remaining = 0
+                    } | ConvertTo-Json)
+                    Write-TextResponse -Stream $stream -StatusCode 200 -ContentType "application/json; charset=utf-8" -Text $rateLimitJson
+                    $client.Close()
+                    continue
+                }
+            }
+            # ====== End rate limit check ======
+
+            $script:SkipPersistence = (-not $isLoggedIn)
+
+            $chat = Get-ChatAnswer -Channel $channel -ExternalUserId $externalUserId -ConversationId $conversationId -SessionId $sessionId -Question $question -History $history -ImageDataUrl $imageDataUrl -ImageName $imageName -ModelOverride $modelOverride -EnvFilePath $resolvedEnvFile -FaqEntries $faqEntries -ImageCatalogEntries $imageCatalogEntries -KnowledgeRecords $knowledgeRecords -PromptTemplateText $promptTemplateText -RagPromptTemplateText $ragPromptTemplateText -VisionPromptTemplateText $visionPromptTemplateText -IsLoggedIn $isLoggedIn
             $json = $chat | ConvertTo-Json -Depth 8
             Write-TextResponse -Stream $stream -StatusCode 200 -ContentType "application/json; charset=utf-8" -Text $json
             $client.Close()
@@ -3283,6 +3596,252 @@ while ($true) {
             $payload = if ($request.Body) { ConvertTo-Hashtable -Value ($request.Body | ConvertFrom-Json) } else { @{} }
             $json = (New-RequestCaptureResponse -Kind "handoff" -Payload $payload -LogPath $resolvedHandoffLogPath) | ConvertTo-Json -Depth 6
             Write-TextResponse -Stream $stream -StatusCode 200 -ContentType "application/json; charset=utf-8" -Text $json
+            $client.Close()
+            continue
+        }
+
+        # ====== Auth routes ======
+
+        # CORS preflight for auth routes
+        if ($method -eq "OPTIONS") {
+            $corsHeaders = "HTTP/1.1 204 No Content`r`n" +
+                "Access-Control-Allow-Origin: *`r`n" +
+                "Access-Control-Allow-Methods: GET, POST, OPTIONS`r`n" +
+                "Access-Control-Allow-Headers: Content-Type, Authorization`r`n" +
+                "Connection: close`r`n`r`n"
+            $corsBytes = [System.Text.Encoding]::ASCII.GetBytes($corsHeaders)
+            $stream.Write($corsBytes, 0, $corsBytes.Length)
+            $stream.Flush()
+            $client.Close()
+            continue
+        }
+
+        # POST /api/auth/register
+        if ($method -eq "POST" -and $path -eq "/api/auth/register") {
+            $body = if ($request.Body) { $request.Body | ConvertFrom-Json } else { $null }
+            $email = if ($body -and $body.email) { [string]$body.email } else { "" }
+            $password = if ($body -and $body.password) { [string]$body.password } else { "" }
+            $nickname = if ($body -and $body.nickname) { [string]$body.nickname } else { "" }
+
+            if (-not (Test-IsValidEmail -Email $email)) {
+                $json = (@{ok = $false; message = "邮箱格式不正确"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 400 -Json $json
+                $client.Close()
+                continue
+            }
+
+            if ($password.Length -lt 6) {
+                $json = (@{ok = $false; message = "密码至少 6 位"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 400 -Json $json
+                $client.Close()
+                continue
+            }
+
+            # Re-register: if already registered and verified, reject; if unverified, resend code
+            if ($script:AuthUsers.ContainsKey($email)) {
+                $existing = $script:AuthUsers[$email]
+                if ($existing.verified) {
+                    $json = (@{ok = $false; message = "该邮箱已注册"} | ConvertTo-Json -Compress)
+                    Write-AuthJsonResponse -Stream $stream -StatusCode 400 -Json $json
+                } else {
+                    $code = New-VerificationCode
+                    $script:AuthCodes[$email] = @{
+                        code = $code
+                        expires_at = (Get-Date).ToUniversalTime().AddMinutes(10)
+                    }
+                    $script:AuthUsers[$email].password_hash = Get-PasswordHash -Password $password
+                    if ($nickname) { $script:AuthUsers[$email].nickname = $nickname }
+                    $sendResult = Send-VerificationEmail -ToEmail $email -Code $code
+                    if ($sendResult.sent) {
+                        $json = (@{ok = $true; message = "验证码已重新发送至您的邮箱"} | ConvertTo-Json -Compress)
+                    } elseif ($sendResult.reason -eq "rate_limited") {
+                        $json = (@{ok = $false; message = "发送太频繁，请 $($sendResult.wait_seconds) 秒后再试"} | ConvertTo-Json -Compress)
+                    } else {
+                        $json = (@{ok = $true; message = "验证码已重新发送（查看服务器日志）"} | ConvertTo-Json -Compress)
+                    }
+                    Write-AuthJsonResponse -Stream $stream -StatusCode 200 -Json $json
+                }
+                $client.Close()
+                continue
+            }
+
+            # New user
+            $script:AuthUserIdCounter += 1
+            $code = New-VerificationCode
+            $now = Get-NowIsoString
+            $userRecord = @{
+                id = $script:AuthUserIdCounter
+                email = $email
+                password_hash = Get-PasswordHash -Password $password
+                nickname = if ($nickname) { $nickname } else { "" }
+                company = ""
+                phone = ""
+                created_at = $now
+                last_login = $null
+                verified = $false
+            }
+            $script:AuthUsers[$email] = $userRecord
+            $script:AuthCodes[$email] = @{
+                code = $code
+                expires_at = (Get-Date).ToUniversalTime().AddMinutes(10)
+            }
+            $sendResult = Send-VerificationEmail -ToEmail $email -Code $code
+            if ($sendResult.sent) {
+                $json = (@{ok = $true; message = "验证码已发送至您的邮箱，请查收"} | ConvertTo-Json -Compress)
+            } elseif ($sendResult.reason -eq "rate_limited") {
+                $json = (@{ok = $false; message = "发送太频繁，请 $($sendResult.wait_seconds) 秒后再试"} | ConvertTo-Json -Compress)
+            } else {
+                $json = (@{ok = $true; message = "验证码已发送（查看服务器日志）"} | ConvertTo-Json -Compress)
+            }
+            Write-AuthJsonResponse -Stream $stream -StatusCode 200 -Json $json
+            $client.Close()
+            continue
+        }
+
+        # POST /api/auth/verify
+        if ($method -eq "POST" -and $path -eq "/api/auth/verify") {
+            $body = if ($request.Body) { $request.Body | ConvertFrom-Json } else { $null }
+            $email = if ($body -and $body.email) { [string]$body.email } else { "" }
+            $code = if ($body -and $body.code) { [string]$body.code } else { "" }
+
+            if (-not $email -or -not $script:AuthUsers.ContainsKey($email)) {
+                $json = (@{ok = $false; message = "该邮箱未注册"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 400 -Json $json
+                $client.Close()
+                continue
+            }
+
+            if (-not $script:AuthCodes.ContainsKey($email)) {
+                $json = (@{ok = $false; message = "请先获取验证码"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 400 -Json $json
+                $client.Close()
+                continue
+            }
+
+            $stored = $script:AuthCodes[$email]
+            if ((Get-Date).ToUniversalTime() -gt [DateTime]$stored.expires_at) {
+                $script:AuthCodes.Remove($email)
+                $json = (@{ok = $false; message = "验证码已过期，请重新获取"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 400 -Json $json
+                $client.Close()
+                continue
+            }
+
+            if ($stored.code -ne $code) {
+                $json = (@{ok = $false; message = "验证码错误"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 400 -Json $json
+                $client.Close()
+                continue
+            }
+
+            # Activate user and create session
+            $user = $script:AuthUsers[$email]
+            $user.verified = $true
+            $user.last_login = Get-NowIsoString
+            $script:AuthCodes.Remove($email)
+
+            $token = New-AuthToken
+            $script:AuthSessions[$token] = @{
+                email = $email
+                created_at = Get-NowIsoString
+                expires_at = (Get-Date).ToUniversalTime().AddDays(7)
+                ip = ""
+                user_agent = ""
+            }
+
+            $json = (@{
+                ok = $true
+                token = $token
+                user = @{email = $user.email; nickname = $user.nickname}
+            } | ConvertTo-Json -Compress)
+            Write-AuthJsonResponse -Stream $stream -StatusCode 200 -Json $json
+            $client.Close()
+            continue
+        }
+
+        # POST /api/auth/login
+        if ($method -eq "POST" -and $path -eq "/api/auth/login") {
+            $body = if ($request.Body) { $request.Body | ConvertFrom-Json } else { $null }
+            $email = if ($body -and $body.email) { [string]$body.email } else { "" }
+            $password = if ($body -and $body.password) { [string]$body.password } else { "" }
+
+            if (-not $email -or -not $script:AuthUsers.ContainsKey($email)) {
+                $json = (@{ok = $false; message = "邮箱或密码错误"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 401 -Json $json
+                $client.Close()
+                continue
+            }
+
+            $user = $script:AuthUsers[$email]
+            if (-not $user.verified) {
+                $json = (@{ok = $false; message = "请先验证邮箱"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 401 -Json $json
+                $client.Close()
+                continue
+            }
+
+            $hash = Get-PasswordHash -Password $password
+            if ($hash -ne $user.password_hash) {
+                $json = (@{ok = $false; message = "邮箱或密码错误"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 401 -Json $json
+                $client.Close()
+                continue
+            }
+
+            $user.last_login = Get-NowIsoString
+            $token = New-AuthToken
+            $script:AuthSessions[$token] = @{
+                email = $email
+                created_at = Get-NowIsoString
+                expires_at = (Get-Date).ToUniversalTime().AddDays(7)
+                ip = ""
+                user_agent = ""
+            }
+
+            $json = (@{
+                ok = $true
+                token = $token
+                user = @{email = $user.email; nickname = $user.nickname}
+            } | ConvertTo-Json -Compress)
+            Write-AuthJsonResponse -Stream $stream -StatusCode 200 -Json $json
+            $client.Close()
+            continue
+        }
+
+        # GET /api/auth/me
+        if ($method -eq "GET" -and $path -eq "/api/auth/me") {
+            $authHeader = Get-AuthHeaderValue -Headers $request.Headers
+            $token = ""
+            if ($authHeader -match "^Bearer\s+(.+)$") {
+                $token = $Matches[1]
+            }
+
+            if (-not $token) {
+                $json = (@{ok = $false; message = "未提供 token"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 401 -Json $json
+                $client.Close()
+                continue
+            }
+
+            $user = Get-AuthUserByToken -Token $token
+            if (-not $user) {
+                $json = (@{ok = $false; message = "token 无效或已过期"} | ConvertTo-Json -Compress)
+                Write-AuthJsonResponse -Stream $stream -StatusCode 401 -Json $json
+                $client.Close()
+                continue
+            }
+
+            $json = (@{
+                ok = $true
+                user = @{
+                    email = $user.email
+                    nickname = $user.nickname
+                    company = $user.company
+                    phone = $user.phone
+                    created_at = $user.created_at
+                }
+            } | ConvertTo-Json -Compress)
+            Write-AuthJsonResponse -Stream $stream -StatusCode 200 -Json $json
             $client.Close()
             continue
         }
