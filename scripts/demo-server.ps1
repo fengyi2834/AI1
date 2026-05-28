@@ -3204,16 +3204,6 @@ function Write-TextResponse {
 
 $resolvedWebRoot = (Resolve-Path -LiteralPath $WebRoot).Path
 $resolvedEnvFile = (Resolve-Path -LiteralPath $EnvFile).Path
-
-# Inject SMTP config from env file into process environment (for Send-VerificationEmail)
-$__startupEnvMap = Get-EnvMap -Path $resolvedEnvFile
-foreach ($__key in @("SMTP_SERVER","SMTP_PORT","SMTP_USER","SMTP_PASS","SMTP_FROM","SMTP_FROM_NAME")) {
-    if ($__startupEnvMap.ContainsKey($__key) -and $__startupEnvMap[$__key]) {
-        [Environment]::SetEnvironmentVariable($__key, $__startupEnvMap[$__key])
-    }
-}
-Remove-Variable __startupEnvMap, __key -ErrorAction SilentlyContinue
-
 $resolvedPromptTemplate = Resolve-Path -LiteralPath $PromptTemplate -ErrorAction SilentlyContinue
 $promptTemplateText = if ($resolvedPromptTemplate) {
     Get-TextFileContent -Path $resolvedPromptTemplate.Path
@@ -3390,61 +3380,24 @@ function Send-VerificationEmail {
     }
     $script:AuthEmailCooldown[$ToEmail] = Get-Date
 
-    $smtpServer  = $env:SMTP_SERVER
-    $smtpPort    = if ($env:SMTP_PORT) { [int]$env:SMTP_PORT } else { 465 }
-    $smtpUser    = $env:SMTP_USER
-    $smtpPass    = $env:SMTP_PASS
-    $fromEmail   = if ($env:SMTP_FROM) { $env:SMTP_FROM } else { $smtpUser }
-    $fromName    = if ($env:SMTP_FROM_NAME) { $env:SMTP_FROM_NAME } else { "广西亿库硅藻板" }
-
-    # SMTP not configured → fall back to console log
-    $isPlaceholder = ($smtpServer -match '__FILL_') -or ($smtpUser -match '__FILL_') -or ($smtpPass -match '__FILL_')
-    if (-not $smtpServer -or -not $smtpUser -or -not $smtpPass -or $isPlaceholder) {
-        Write-Host "===== [AUTH] 验证码（$ToEmail）：$Code =====" -ForegroundColor Yellow
-        if ($isPlaceholder) {
-            Write-Host "[EMAIL] SMTP 占位符未替换，验证码已输出到控制台" -ForegroundColor DarkYellow
-        } else {
-            Write-Host "[EMAIL] SMTP 未配置，验证码已输出到控制台" -ForegroundColor DarkYellow
-        }
-        return @{ sent = $false; reason = "smtp_not_configured" }
-    }
-
+    # Call local Python email microservice (port 12580) via Invoke-RestMethod
+    # Uses Invoke-RestMethod (pwsh built-in, no subprocess) to avoid pwsh's broken subprocess networking on Linux
+    $emailServiceUrl = "http://127.0.0.1:12580"
     try {
-        $mail = New-Object System.Net.Mail.MailMessage
-        $mail.From = New-Object System.Net.Mail.MailAddress($fromEmail, $fromName)
-        $mail.To.Add($ToEmail)
-        $mail.Subject = "邮箱验证码 - 广西亿库硅藻板"
-        $mail.Body = @"
-您好！
-
-您的验证码是：$Code
-
-该验证码 10 分钟内有效。如非本人操作，请忽略此邮件。
-
-——
-广西亿库光养硅藻环保科技有限公司
-"@
-        $mail.BodyEncoding = [System.Text.Encoding]::UTF8
-        $mail.SubjectEncoding = [System.Text.Encoding]::UTF8
-        $mail.IsBodyHtml = $false
-
-        $smtp = New-Object System.Net.Mail.SmtpClient($smtpServer, $smtpPort)
-        $smtp.EnableSsl = $true
-        $smtp.DeliveryMethod = [System.Net.Mail.SmtpDeliveryMethod]::Network
-        $smtp.Credentials = New-Object System.Net.NetworkCredential($smtpUser, $smtpPass)
-        $smtp.Timeout = 10000
-        $smtp.Send($mail)
-
-        $mail.Dispose()
-        $smtp.Dispose()
-
-        Write-Host "[EMAIL] 验证码已发送至 $ToEmail" -ForegroundColor Green
-        return @{ sent = $true }
+        $response = Invoke-RestMethod -Uri $emailServiceUrl -Method Post `
+            -Body (@{to = $ToEmail; code = $Code} | ConvertTo-Json) `
+            -ContentType "application/json" -TimeoutSec 30
+        if ($response.ok) {
+            Write-Host "[EMAIL] 验证码已发送至 $ToEmail" -ForegroundColor Green
+            return @{ sent = $true }
+        } else {
+            throw ($response.error)
+        }
     }
     catch {
         Write-Host "[EMAIL] 发送失败: $_" -ForegroundColor Red
         Write-Host "===== [AUTH] 验证码（$ToEmail）：$Code =====" -ForegroundColor Yellow
-        return @{ sent = $false; reason = $_.Exception.Message }
+        return @{ sent = $false; reason = "$_" }
     }
 }
 
