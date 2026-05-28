@@ -283,6 +283,10 @@ a:focus {
   color: #fff;
 }
 
+.mobile-nav .chat-launcher {
+  justify-self: center;
+}
+
 .app-main {
   min-height: calc(100vh - 220px);
 }

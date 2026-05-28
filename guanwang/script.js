@@ -390,18 +390,16 @@ if (mobileToggle && mobileNav) {
     setMobileOpen(mobileNav.hidden);
   });
 
-  // 滚动时收起菜单（300ms 冷却避免展开抖动误关）
+  // 滚动超过一屏自动收起菜单
   let menuOpenedAt = 0;
+  let scrollAnchor = 0;
   const origOpen = setMobileOpen;
-  setMobileOpen = function(v) { origOpen(v); if (v) menuOpenedAt = Date.now(); };
+  setMobileOpen = function(v) { origOpen(v); if (v) { menuOpenedAt = Date.now(); scrollAnchor = window.scrollY; } };
 
-  let lastY = 0;
   window.addEventListener("scroll", () => {
-    const y = window.scrollY;
-    if (!mobileNav.hidden && Date.now() - menuOpenedAt > 300 && Math.abs(y - lastY) > 50) {
+    if (!mobileNav.hidden && Date.now() - menuOpenedAt > 300 && Math.abs(window.scrollY - scrollAnchor) > 60) {
       setMobileOpen(false);
     }
-    lastY = y;
   }, { passive: true });
 }
 
