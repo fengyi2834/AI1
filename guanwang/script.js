@@ -390,19 +390,15 @@ if (mobileToggle && mobileNav) {
     setMobileOpen(mobileNav.hidden);
   });
 
-  // 滚动超过一屏后自动收起菜单
-  let scrollSinceOpen = 0;
+  // 滚动时收起菜单
+  let lastY = 0;
   window.addEventListener("scroll", () => {
-    if (!mobileNav.hidden) {
-      scrollSinceOpen += Math.abs(window.scrollY - (scrollSinceOpen > 0 ? window.scrollY : 0));
-      if (window.scrollY > 400) {
-        setMobileOpen(false);
-      }
+    const y = window.scrollY;
+    if (!mobileNav.hidden && Math.abs(y - lastY) > 50) {
+      setMobileOpen(false);
     }
+    lastY = y;
   }, { passive: true });
-  mobileToggle.addEventListener("click", () => {
-    scrollSinceOpen = 0;
-  });
 }
 
 sectionLinks.forEach((link) => {

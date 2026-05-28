@@ -204,6 +204,7 @@ a:focus {
 .mobile-toggle {
   flex: 0 0 auto;
   position: relative;
+  z-index: 1100;
   width: 44px;
   height: 44px;
   padding: 0;
@@ -216,6 +217,8 @@ a:focus {
   font-size: 0;
   color: transparent;
   overflow: hidden;
+  touch-action: manipulation;
+  pointer-events: auto;
 }
 
 .mobile-toggle::before,
