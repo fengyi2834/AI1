@@ -176,7 +176,7 @@ services:
       SANDBOX_JS_ALLOWED_MODULES: lodash,dayjs,moment,uuid,crypto-js,qs,url,querystring
       SANDBOX_PYTHON_ALLOWED_MODULES: math,datetime,time,json,csv,re,typing,uuid,numpy,pandas
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r => {if(!r.ok) throw new Error();process.exit(0)}).catch(() => process.exit(1))"]
       interval: 30s
       timeout: 20s
       retries: 3
@@ -226,7 +226,7 @@ services:
     environment:
       SANDBOX_CONFIG_PATH: /etc/opensandbox/config.toml
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      test: ["CMD", "python3", "-c", "import urllib.request; r = urllib.request.urlopen('http://localhost:8090/health'); exit(0 if r.status == 200 else 1)"]
       interval: 10s
       timeout: 5s
       retries: 5
