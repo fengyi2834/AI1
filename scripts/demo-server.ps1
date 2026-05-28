@@ -3204,6 +3204,16 @@ function Write-TextResponse {
 
 $resolvedWebRoot = (Resolve-Path -LiteralPath $WebRoot).Path
 $resolvedEnvFile = (Resolve-Path -LiteralPath $EnvFile).Path
+
+# Inject SMTP config from env file into process environment (for Send-VerificationEmail)
+$__startupEnvMap = Get-EnvMap -Path $resolvedEnvFile
+foreach ($__key in @("SMTP_SERVER","SMTP_PORT","SMTP_USER","SMTP_PASS","SMTP_FROM","SMTP_FROM_NAME")) {
+    if ($__startupEnvMap.ContainsKey($__key) -and $__startupEnvMap[$__key]) {
+        [Environment]::SetEnvironmentVariable($__key, $__startupEnvMap[$__key])
+    }
+}
+Remove-Variable __startupEnvMap, __key -ErrorAction SilentlyContinue
+
 $resolvedPromptTemplate = Resolve-Path -LiteralPath $PromptTemplate -ErrorAction SilentlyContinue
 $promptTemplateText = if ($resolvedPromptTemplate) {
     Get-TextFileContent -Path $resolvedPromptTemplate.Path
@@ -3388,9 +3398,14 @@ function Send-VerificationEmail {
     $fromName    = if ($env:SMTP_FROM_NAME) { $env:SMTP_FROM_NAME } else { "广西亿库硅藻板" }
 
     # SMTP not configured → fall back to console log
-    if (-not $smtpServer -or -not $smtpUser -or -not $smtpPass) {
+    $isPlaceholder = ($smtpServer -match '__FILL_') -or ($smtpUser -match '__FILL_') -or ($smtpPass -match '__FILL_')
+    if (-not $smtpServer -or -not $smtpUser -or -not $smtpPass -or $isPlaceholder) {
         Write-Host "===== [AUTH] 验证码（$ToEmail）：$Code =====" -ForegroundColor Yellow
-        Write-Host "[EMAIL] SMTP 未配置，验证码已输出到控制台" -ForegroundColor DarkYellow
+        if ($isPlaceholder) {
+            Write-Host "[EMAIL] SMTP 占位符未替换，验证码已输出到控制台" -ForegroundColor DarkYellow
+        } else {
+            Write-Host "[EMAIL] SMTP 未配置，验证码已输出到控制台" -ForegroundColor DarkYellow
+        }
         return @{ sent = $false; reason = "smtp_not_configured" }
     }
 
