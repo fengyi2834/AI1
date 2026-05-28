@@ -1,16 +1,18 @@
 #!/bin/bash
 # AI1 数据备份脚本 — 每日凌晨 3 点 cron 执行
-# 备份：MongoDB + PostgreSQL + 聊天数据 + 配置
-# 保留最近 7 天
+# 日常备份：MongoDB + PostgreSQL + 聊天数据 + 配置，保留 30 天
+# 永久存档：每月 1 号额外存一份到 archive/，不删除
 
 set -e
 BACKUP_ROOT="/opt/AI1/backups"
+ARCHIVE_ROOT="$BACKUP_ROOT/archive"
 DATE=$(date +%Y%m%d)
+YM=$(date +%Y%m)
 DEST="$BACKUP_ROOT/$DATE"
 LOG="$BACKUP_ROOT/backup.log"
-RETENTION_DAYS=7
+RETENTION_DAYS=30
 
-mkdir -p "$DEST"
+mkdir -p "$DEST" "$ARCHIVE_ROOT"
 
 echo "=== $(date) 开始备份 ===" >> "$LOG"
 
@@ -30,7 +32,7 @@ docker exec ai1-fastgpt-pg pg_dump \
   -U ai1_pg_user postgres > "$DEST/fastgpt_pg.sql" 2>> "$LOG"
 echo "[2/5] OK" >> "$LOG"
 
-# 3. 聊天数据（聊天记忆、意向记录）
+# 3. 聊天数据（聊天记忆、意向记录、线索）— 高价值数据
 echo "[3/5] 聊天数据..." >> "$LOG"
 if [ -d /opt/AI1/data ]; then
   cp -r /opt/AI1/data "$DEST/data" 2>> "$LOG"
@@ -56,14 +58,20 @@ cp /opt/AI1/infra/fastgpt/.env.local "$DEST/config/" 2>/dev/null
 cp /opt/AI1/infra/fastgpt/docker-compose.local.yml "$DEST/config/" 2>/dev/null
 echo "[5/5] OK" >> "$LOG"
 
-# 打包
+# 打包（日常）
 cd "$BACKUP_ROOT"
 tar -czf "$DATE.tar.gz" "$DATE" 2>> "$LOG"
 rm -rf "$DATE"
-echo "备份包: $BACKUP_ROOT/$DATE.tar.gz ($(du -h "$DATE.tar.gz" | cut -f1))" >> "$LOG"
+echo "日常备份: $BACKUP_ROOT/$DATE.tar.gz ($(du -h "$DATE.tar.gz" | cut -f1))" >> "$LOG"
 
-# 清理 7 天前的备份
-find "$BACKUP_ROOT" -name "*.tar.gz" -mtime +$RETENTION_DAYS -delete 2>> "$LOG"
+# 每月 1 号额外存一份永久存档
+if [ "$(date +%d)" = "01" ]; then
+  cp "$DATE.tar.gz" "$ARCHIVE_ROOT/${YM}_monthly.tar.gz" 2>> "$LOG"
+  echo "永久存档: $ARCHIVE_ROOT/${YM}_monthly.tar.gz" >> "$LOG"
+fi
+
+# 清理 30 天前的日常备份（archive/ 不受影响）
+find "$BACKUP_ROOT" -maxdepth 1 -name "*.tar.gz" -mtime +$RETENTION_DAYS -delete 2>> "$LOG"
 
 echo "=== $(date) 备份完成 ===" >> "$LOG"
 echo "" >> "$LOG"
