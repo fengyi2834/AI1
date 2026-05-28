@@ -389,6 +389,16 @@ if (mobileToggle && mobileNav) {
   mobileToggle.addEventListener("click", () => {
     setMobileOpen(mobileNav.hidden);
   });
+
+  // 滚动时自动收起菜单
+  let lastScrollY = window.scrollY;
+  window.addEventListener("scroll", () => {
+    const nowY = window.scrollY;
+    if (!mobileNav.hidden && Math.abs(nowY - lastScrollY) > 10) {
+      setMobileOpen(false);
+    }
+    lastScrollY = nowY;
+  }, { passive: true });
 }
 
 sectionLinks.forEach((link) => {

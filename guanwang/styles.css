@@ -1005,10 +1005,34 @@ a:focus {
   transform: translateY(0);
 }
 
+.mobile-chat-fab {
+  display: none;
+}
+
 @media screen and (max-width: 1199px) {
   .value-grid,
   .cases-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 899px) {
+  .mobile-chat-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    right: 20px;
+    bottom: 82px;
+    z-index: 1200;
+    width: 50px;
+    height: 50px;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #173244, #285b4e);
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(23, 50, 68, 0.28);
+    cursor: pointer;
   }
 }
 
