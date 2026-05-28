@@ -27,10 +27,10 @@
     .chat-page-head .head-info strong { font-size: 16px; display: block; }
     .chat-page-head .head-info span { font-size: 11px; color: rgba(255,255,255,0.7); }
     .chat-page-head .auth-btn {
-      padding: 6px 14px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.6);
-      background: transparent; color: #fff; font-size: 13px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      padding: 6px 14px; border-radius: 16px; border: none;
+      background: #fff; color: #3370FF; font-size: 13px; cursor: pointer; white-space: nowrap; flex-shrink: 0; font-weight: 600;
     }
-    .chat-page-head .auth-btn.is-logged-in { background: rgba(255,255,255,0.2); border-color: transparent; }
+    .chat-page-head .auth-btn.is-logged-in { background: rgba(255,255,255,0.25); color: #fff; }
 
     .chat-page-quick {
       display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px;
@@ -99,7 +99,7 @@
       <button class="back-btn" onclick="history.back()">←</button>
       <div class="head-info">
         <strong>亿库 AI 客服</strong>
-        <span>即时响应 · 在线咨询</span>
+        <span>在线咨询</span>
       </div>
       <button class="auth-btn" id="authBtn" title="登录">登录</button>
     </div>
