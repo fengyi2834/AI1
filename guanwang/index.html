@@ -8,7 +8,7 @@
     name="description"
     content="亿库硅藻板企业官网，围绕室内环境与长期耐用性展示环保、抗菌、防水、阻燃与耐腐蚀板材方案。"
   >
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=20260527">
 </head>
 <body>
   <header id="site-header">
@@ -50,7 +50,7 @@
                 <strong>亿库 AI 客服</strong>
                 <span>产品、场景、规格、报价与销售对接</span>
               </div>
-              <em>即时响应</em>
+              <button class="chat-auth-btn" type="button" title="登录 / 注册">登录</button>
             </div>
 
             <div class="chat-quick">
@@ -64,8 +64,18 @@
             <div class="chat-body" aria-live="polite"></div>
 
             <form class="chat-form">
+              <div class="chat-image-preview" hidden>
+                <span class="chat-image-preview-name"></span>
+                <button type="button" class="chat-image-preview-remove" title="移除图片">&times;</button>
+              </div>
               <input name="draft" type="text" placeholder="请输入你的问题" autocomplete="off">
-              <button type="submit">发送</button>
+              <div class="chat-form-actions">
+                <label class="chat-image-btn" title="发送图片">
+                  <input type="file" accept="image/*" style="display:none" class="chat-image-input">
+                  &#x1F4F7;
+                </label>
+                <button type="submit">发送</button>
+              </div>
             </form>
           </div>
         </div>
@@ -106,7 +116,7 @@
               <strong>亿库 AI 客服</strong>
               <span>产品、场景、规格、报价与销售对接</span>
             </div>
-            <em>即时响应</em>
+            <button class="chat-auth-btn" type="button" title="登录 / 注册">登录</button>
           </div>
 
           <div class="chat-quick">
@@ -120,8 +130,18 @@
           <div class="chat-body" aria-live="polite"></div>
 
           <form class="chat-form">
+            <div class="chat-image-preview" hidden>
+              <span class="chat-image-preview-name"></span>
+              <button type="button" class="chat-image-preview-remove" title="移除图片">&times;</button>
+            </div>
             <input name="draft" type="text" placeholder="请输入你的问题" autocomplete="off">
-            <button type="submit">发送</button>
+            <div class="chat-form-actions">
+              <label class="chat-image-btn" title="发送图片">
+                <input type="file" accept="image/*" style="display:none" class="chat-image-input">
+                &#x1F4F7;
+              </label>
+              <button type="submit">发送</button>
+            </div>
           </form>
         </div>
       </div>
@@ -408,6 +428,6 @@
 
   <button id="go-top" type="button" aria-label="回到顶部">↑</button>
 
-  <script src="./script.js"></script>
+  <script src="./script.js?v=20260527"></script>
 </body>
 </html>
