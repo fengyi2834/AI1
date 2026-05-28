@@ -152,7 +152,7 @@ services:
       retries: 3
 
   fastgpt-code-sandbox:
-    image: ghcr.io/labring/fastgpt-code-sandbox:${FASTGPT_CODE_SANDBOX_IMAGE_TAG:-v4.14.10}
+    image: ghcr.io/labring/fastgpt-code-sandbox:${FASTGPT_CODE_SANDBOX_IMAGE_TAG:-v4.14.22}
     container_name: fastgpt-code-sandbox
     restart: always
     networks:
@@ -182,7 +182,7 @@ services:
       retries: 3
 
   fastgpt-plugin:
-    image: ghcr.io/labring/fastgpt-plugin:${FASTGPT_PLUGIN_IMAGE_TAG:-v0.5.6}
+    image: ghcr.io/labring/fastgpt-plugin:${FASTGPT_PLUGIN_IMAGE_TAG:-v0.6.2}
     container_name: fastgpt-plugin-local
     restart: always
     depends_on:
@@ -305,7 +305,7 @@ services:
       retries: 10
 
   fastgpt-app:
-    image: ghcr.io/labring/fastgpt:${FASTGPT_IMAGE_TAG:-v4.14.10.1}
+    image: ghcr.io/labring/fastgpt:${FASTGPT_IMAGE_TAG:-v4.14.22}
     container_name: fastgpt-app
     ports:
       - "${FASTGPT_PORT:-3000}:3000"
@@ -362,7 +362,7 @@ services:
       - ./config.json:/app/data/config.json
 
   fastgpt-mcp-server:
-    image: ghcr.io/labring/fastgpt-mcp_server:${FASTGPT_MCP_SERVER_IMAGE_TAG:-v4.14.3}
+    image: ghcr.io/labring/fastgpt-mcp_server:${FASTGPT_MCP_SERVER_IMAGE_TAG:-v4.14.22}
     container_name: fastgpt-mcp-server
     ports:
       - "${FASTGPT_MCP_PORT:-3005}:3000"
