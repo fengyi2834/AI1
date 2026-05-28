@@ -24,6 +24,9 @@ services:
 
   fastgpt-plugin:
     container_name: ai1-fastgpt-plugin
+    extra_hosts:
+      - "guangxiyiku.com:host-gateway"
+      - "www.guangxiyiku.com:host-gateway"
 
   opensandbox-server:
     container_name: ai1-fastgpt-opensandbox-server
@@ -41,6 +44,9 @@ services:
 
   fastgpt-app:
     container_name: ai1-fastgpt-app
+    extra_hosts:
+      - "guangxiyiku.com:host-gateway"
+      - "www.guangxiyiku.com:host-gateway"
 
   fastgpt-mcp-server:
     container_name: ai1-fastgpt-mcp-server

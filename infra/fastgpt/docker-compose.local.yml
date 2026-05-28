@@ -184,6 +184,8 @@ services:
   fastgpt-plugin:
     image: ghcr.io/labring/fastgpt-plugin:${FASTGPT_PLUGIN_IMAGE_TAG:-v0.6.2}
     container_name: fastgpt-plugin-local
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: always
     depends_on:
       fastgpt-minio:
@@ -307,6 +309,8 @@ services:
   fastgpt-app:
     image: ghcr.io/labring/fastgpt:${FASTGPT_IMAGE_TAG:-v4.14.22}
     container_name: fastgpt-app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "${FASTGPT_PORT:-3000}:3000"
     depends_on:
