@@ -390,11 +390,15 @@ if (mobileToggle && mobileNav) {
     setMobileOpen(mobileNav.hidden);
   });
 
-  // 滚动时收起菜单
+  // 滚动时收起菜单（300ms 冷却避免展开抖动误关）
+  let menuOpenedAt = 0;
+  const origOpen = setMobileOpen;
+  setMobileOpen = function(v) { origOpen(v); if (v) menuOpenedAt = Date.now(); };
+
   let lastY = 0;
   window.addEventListener("scroll", () => {
     const y = window.scrollY;
-    if (!mobileNav.hidden && Math.abs(y - lastY) > 50) {
+    if (!mobileNav.hidden && Date.now() - menuOpenedAt > 300 && Math.abs(y - lastY) > 50) {
       setMobileOpen(false);
     }
     lastY = y;
