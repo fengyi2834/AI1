@@ -406,9 +406,9 @@ a:focus {
 }
 
 .hero-btn-primary {
-  background: #2f7a4f;
+  background: linear-gradient(135deg, #173244, #285b4e);
   color: #fff;
-  box-shadow: 0 16px 30px rgba(47, 122, 79, 0.18);
+  box-shadow: 0 16px 30px rgba(23, 50, 68, 0.22);
 }
 
 .hero-btn-secondary {
