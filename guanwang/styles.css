@@ -190,7 +190,7 @@ a:focus {
 }
 
 .nav-cta {
-  background: #173244;
+  background: linear-gradient(135deg, #173244, #285b4e);
   color: #fff;
   box-shadow: 0 12px 24px rgba(23, 50, 68, 0.16);
 }
@@ -198,7 +198,7 @@ a:focus {
 .nav-cta:hover,
 .hero-btn-primary:hover {
   color: #fff;
-  background: #21475e;
+  background: linear-gradient(135deg, #21475e, #346b5a);
 }
 
 .mobile-toggle {
