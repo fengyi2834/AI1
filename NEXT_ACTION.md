@@ -1,34 +1,39 @@
 # Next Action
 
-## Default Startup
+## 待办
 
-Use this as the default restart prompt:
+| 优先级 | 任务 | 说明 |
+|--------|------|------|
+| P1 | 宝塔面板 8888 加固 | 改端口或加 IP 白名单 |
+| P1 | API 密钥管理 | .env 明文密钥迁移 |
+| P2 | 网站监控告警 | 服务异常时能通知 |
+| P2 | 数据备份 | cron 已配，每天 03:00 |
+| — | Windows TLS 兼容 | 之前临时关 http2，需彻底修 |
 
-```text
-先读 AGENT.md、PROJECT_INDEX.md、CURRENT_STATE.md、DECISIONS.md、NEXT_ACTION.md，再按当前任务需要决定是否继续读 task_plan.md / findings.md / progress.md。
+## 常用命令
+
+```bash
+# 重启 Demo Server
+fuser -k 4180/tcp
+cd /opt/AI1 && nohup pwsh -File ./scripts/start-guanwang-server-ai1.ps1 -Port 4180 > /var/log/ai1-guanwang.log 2>&1 &
+
+# 重启 FastGPT
+cd /opt/AI1/infra/fastgpt
+docker compose -f docker-compose.local.yml -f docker-compose.server.ai1.override.yml --env-file ../../deploy/env/fastgpt.server.ai1.env up -d
+
+# 查看日志
+tail -f /var/log/ai1-guanwang.log
+docker logs -f ai1-fastgpt-app
+
+# 手动备份
+bash /opt/AI1/scripts/backup.sh
 ```
 
-## Immediate Engineering Tasks
+## 关键文件
 
-1. Tighten the FastGPT answer prompt and website guardrail so unsupported inference is reduced.
-2. Re-test the real FastGPT app path with high-risk questions instead of relying on fallback behavior.
-3. Keep `docs/tasks/KNOWLEDGE_BASE_TASK_PROMPT.md` as the reusable scope file for future knowledge-base passes.
-4. Keep the website/demo verification flow able to distinguish `fastgpt_app` from fallback behavior.
-
-## Canonical Scripts
-
-- `scripts/rebuild-fastgpt-faq.ps1`
-- `scripts/rebuild-fastgpt-dataset.ps1`
-- `scripts/tune-fastgpt-rag-app.ps1`
-- `scripts/register-fastgpt-chat-model.ps1`
-- `scripts/extract_ppt_pdf_knowledge.py`
-- `scripts/build_curated_faq.py`
-- `scripts/demo-server.ps1`
-- `scripts/start-local.ps1`
-- `scripts/start-demo.ps1`
-
-## Session Hygiene
-
-- When a phase is finished, add a short summary before switching topics.
-- If the conversation becomes long, start a fresh session using the startup prompt above.
-- Read archived docs only for deep reference, not by default.
+- `scripts/demo-server.ps1` — 主聊天服务（路由、认证、AI 调用）
+- `scripts/email-sender.py` — 邮件微服务
+- `scripts/backup.sh` — 数据备份
+- `deploy/env/guanwang.server.env` — Demo Server 环境变量
+- `deploy/env/fastgpt.server.ai1.env` — FastGPT 环境变量
+- `infra/fastgpt/docker-compose.local.yml` — FastGPT 容器编排
