@@ -1,15 +1,18 @@
-const STORAGE_CONVERSATION = "yiku_site_conversation_id";
-const STORAGE_USER = "yiku_site_user_id";
-const STORAGE_AUTH_TOKEN = "yiku_auth_token";
-const STORAGE_AUTH_USER = "yiku_auth_user";
-const WELCOME_MESSAGE = "你好，我是亿库 AI 客服。可以咨询产品适用场景、规格、报价方式和销售联系方式。";
+var I = window.I18N;
+var tt = function(k) { return I ? I.t(k) : k; };
 
-const mobileToggle = document.getElementById("mobile-toggle");
-const mobileNav = document.getElementById("mobile-nav");
-const currentYear = document.getElementById("current-year");
-const goTopButton = document.getElementById("go-top");
-const sectionLinks = Array.from(document.querySelectorAll('a[href^="#"]'));
-const navLinks = Array.from(document.querySelectorAll(".nav a"));
+var STORAGE_CONVERSATION = "yiku_site_conversation_id";
+var STORAGE_USER = "yiku_site_user_id";
+var STORAGE_AUTH_TOKEN = "yiku_auth_token";
+var STORAGE_AUTH_USER = "yiku_auth_user";
+var WELCOME_MESSAGE = tt('chat.welcome');
+
+var mobileToggle = document.getElementById("mobile-toggle");
+var mobileNav = document.getElementById("mobile-nav");
+var currentYear = document.getElementById("current-year");
+var goTopButton = document.getElementById("go-top");
+var sectionLinks = Array.from(document.querySelectorAll('a[href^="#"]'));
+var navLinks = Array.from(document.querySelectorAll(".nav a"));
 
 function setMobileOpen(isOpen) {
   if (!mobileToggle || !mobileNav) {
@@ -17,12 +20,12 @@ function setMobileOpen(isOpen) {
   }
 
   mobileToggle.setAttribute("aria-expanded", String(isOpen));
-  mobileToggle.setAttribute("aria-label", isOpen ? "关闭菜单" : "打开菜单");
+  mobileToggle.setAttribute("aria-label", isOpen ? tt("mobile.close_menu") : tt("mobile.open_menu"));
   mobileNav.hidden = !isOpen;
 }
 
 function smoothScrollTo(selector) {
-  const target = document.querySelector(selector);
+  var target = document.querySelector(selector);
   if (!target) {
     return;
   }
@@ -31,8 +34,8 @@ function smoothScrollTo(selector) {
 }
 
 function resolveApiUrl() {
-  const host = window.location.hostname || "127.0.0.1";
-  const isLocalHost = host === "127.0.0.1" || host === "localhost" || window.location.protocol === "file:";
+  var host = window.location.hostname || "127.0.0.1";
+  var isLocalHost = host === "127.0.0.1" || host === "localhost" || window.location.protocol === "file:";
 
   if (isLocalHost) {
     return "http://127.0.0.1:8787/api/ai/chat";
@@ -42,8 +45,8 @@ function resolveApiUrl() {
 }
 
 function resolveLeadUrl() {
-  const host = window.location.hostname || "127.0.0.1";
-  const isLocalHost = host === "127.0.0.1" || host === "localhost" || window.location.protocol === "file:";
+  var host = window.location.hostname || "127.0.0.1";
+  var isLocalHost = host === "127.0.0.1" || host === "localhost" || window.location.protocol === "file:";
 
   if (isLocalHost) {
     return "http://127.0.0.1:8787/api/ai/lead";
@@ -53,8 +56,8 @@ function resolveLeadUrl() {
 }
 
 function resolveHandoffUrl() {
-  const host = window.location.hostname || "127.0.0.1";
-  const isLocalHost = host === "127.0.0.1" || host === "localhost" || window.location.protocol === "file:";
+  var host = window.location.hostname || "127.0.0.1";
+  var isLocalHost = host === "127.0.0.1" || host === "localhost" || window.location.protocol === "file:";
 
   if (isLocalHost) {
     return "http://127.0.0.1:8787/api/ai/handoff";
@@ -64,8 +67,8 @@ function resolveHandoffUrl() {
 }
 
 function resolveAuthBaseUrl() {
-  const host = window.location.hostname || "127.0.0.1";
-  const isLocalHost = host === "127.0.0.1" || host === "localhost" || window.location.protocol === "file:";
+  var host = window.location.hostname || "127.0.0.1";
+  var isLocalHost = host === "127.0.0.1" || host === "localhost" || window.location.protocol === "file:";
 
   if (isLocalHost) {
     return "http://127.0.0.1:8787";
@@ -75,8 +78,8 @@ function resolveAuthBaseUrl() {
 }
 
 function getAuthHeaders() {
-  const token = localStorage.getItem(STORAGE_AUTH_TOKEN);
-  const headers = { "Content-Type": "application/json" };
+  var token = localStorage.getItem(STORAGE_AUTH_TOKEN);
+  var headers = { "Content-Type": "application/json" };
   if (token) {
     headers["Authorization"] = "Bearer " + token;
   }
@@ -84,32 +87,32 @@ function getAuthHeaders() {
 }
 
 function ensureStorageValue(key, prefix, length) {
-  let value = localStorage.getItem(key);
+  var value = localStorage.getItem(key);
   if (!value) {
-    value = `${prefix}-${Math.random().toString(36).slice(2, length)}`;
+    value = prefix + "-" + Math.random().toString(36).slice(2, length);
     localStorage.setItem(key, value);
   }
   return value;
 }
 
 function createMessageRow(role, text, imageUrl) {
-  const row = document.createElement("div");
-  row.className = `chat-row chat-row-${role}`;
+  var row = document.createElement("div");
+  row.className = "chat-row chat-row-" + role;
 
-  const bubble = document.createElement("div");
+  var bubble = document.createElement("div");
   bubble.className = "chat-bubble";
 
   if (imageUrl) {
-    const img = document.createElement("img");
+    var img = document.createElement("img");
     img.src = imageUrl;
     img.className = "chat-bubble-image";
-    img.alt = "发送的图片";
+    img.alt = tt("alt.chat_image");
     img.style.cssText = "max-width:200px;max-height:200px;border-radius:12px;display:block;margin-bottom:8px;";
     bubble.appendChild(img);
   }
 
   if (text) {
-    const paragraph = document.createElement("p");
+    var paragraph = document.createElement("p");
     paragraph.textContent = text;
     bubble.appendChild(paragraph);
   }
@@ -120,29 +123,29 @@ function createMessageRow(role, text, imageUrl) {
 }
 
 function initializeChatWidget(widget) {
-  const launcher = widget.querySelector(".chat-launcher");
-  const launcherText = widget.querySelector(".chat-launcher-text");
-  const panel = widget.querySelector(".chat-panel");
-  const body = widget.querySelector(".chat-body");
-  const form = widget.querySelector(".chat-form");
-  const input = form ? form.querySelector('input[name="draft"]') : null;
-  const submitButton = form ? form.querySelector('button[type="submit"]') : null;
-  const quickButtons = Array.from(widget.querySelectorAll("[data-quick]"));
-  const hasAuth = !!localStorage.getItem(STORAGE_AUTH_TOKEN);
-  const conversationId = hasAuth ? ensureStorageValue(STORAGE_CONVERSATION, "site", 14) : ("anon-" + Math.random().toString(36).slice(2, 14));
-  const userId = hasAuth ? ensureStorageValue(STORAGE_USER, "visitor", 12) : ("anon-" + Math.random().toString(36).slice(2, 12));
-  const sessionId = "web-session-" + Math.random().toString(36).slice(2, 10);
-  let chatHistory = [];
-  let open = false;
-  let loading = false;
-  let rateLimited = false;
-  let currentImageDataUrl = null;
-  let currentImageName = null;
-  const imageInput = form.querySelector('.chat-image-input');
-  const imageBtn = form.querySelector('.chat-image-btn');
-  const imagePreview = form.querySelector('.chat-image-preview');
-  const imagePreviewName = imagePreview ? imagePreview.querySelector('.chat-image-preview-name') : null;
-  const imagePreviewRemove = imagePreview ? imagePreview.querySelector('.chat-image-preview-remove') : null;
+  var launcher = widget.querySelector(".chat-launcher");
+  var launcherText = widget.querySelector(".chat-launcher-text");
+  var panel = widget.querySelector(".chat-panel");
+  var body = widget.querySelector(".chat-body");
+  var form = widget.querySelector(".chat-form");
+  var input = form ? form.querySelector('input[name="draft"]') : null;
+  var submitButton = form ? form.querySelector('button[type="submit"]') : null;
+  var quickButtons = Array.from(widget.querySelectorAll("[data-quick]"));
+  var hasAuth = !!localStorage.getItem(STORAGE_AUTH_TOKEN);
+  var conversationId = hasAuth ? ensureStorageValue(STORAGE_CONVERSATION, "site", 14) : ("anon-" + Math.random().toString(36).slice(2, 14));
+  var userId = hasAuth ? ensureStorageValue(STORAGE_USER, "visitor", 12) : ("anon-" + Math.random().toString(36).slice(2, 12));
+  var sessionId = "web-session-" + Math.random().toString(36).slice(2, 10);
+  var chatHistory = [];
+  var open = false;
+  var loading = false;
+  var rateLimited = false;
+  var currentImageDataUrl = null;
+  var currentImageName = null;
+  var imageInput = form.querySelector('.chat-image-input');
+  var imageBtn = form.querySelector('.chat-image-btn');
+  var imagePreview = form.querySelector('.chat-image-preview');
+  var imagePreviewName = imagePreview ? imagePreview.querySelector('.chat-image-preview-name') : null;
+  var imagePreviewRemove = imagePreview ? imagePreview.querySelector('.chat-image-preview-remove') : null;
 
   function clearImageSelection() {
     currentImageDataUrl = null;
@@ -162,13 +165,13 @@ function initializeChatWidget(widget) {
 
     var allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
     if (allowedTypes.indexOf(file.type) === -1) {
-      alert('仅支持 PNG、JPEG、WebP 格式的图片');
+      alert(tt('img.unsupported_format'));
       imageInput.value = '';
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      alert('图片大小不能超过 10MB');
+      alert(tt('img.too_large'));
       imageInput.value = '';
       return;
     }
@@ -202,7 +205,9 @@ function initializeChatWidget(widget) {
     open = nextOpen;
     panel.hidden = !open;
     launcher.setAttribute("aria-expanded", String(open));
-    launcherText.textContent = open ? "关闭咨询" : "在线咨询";
+    if (launcherText) {
+      launcherText.textContent = open ? tt("chat.close_chat") : tt("chat.online_chat");
+    }
     if (open) {
       scrollToBottom();
       input.focus();
@@ -215,26 +220,25 @@ function initializeChatWidget(widget) {
   }
 
   function showLoginBanner(panel, form) {
-    // 避免重复添加
     if (panel.querySelector(".chat-login-banner")) {
       return;
     }
 
-    const banner = document.createElement("div");
+    var banner = document.createElement("div");
     banner.className = "chat-login-banner";
 
-    const msg = document.createElement("p");
-    msg.textContent = "免费咨询次数已用完";
+    var msg = document.createElement("p");
+    msg.textContent = tt("chat.free_used");
     msg.className = "chat-login-banner-text";
 
-    const action = document.createElement("p");
-    action.textContent = "请登录后继续咨询";
+    var action = document.createElement("p");
+    action.textContent = tt("chat.please_login");
     action.className = "chat-login-banner-action";
 
-    const loginBtn = document.createElement("a");
+    var loginBtn = document.createElement("a");
     loginBtn.href = "#";
     loginBtn.className = "chat-login-banner-btn";
-    loginBtn.textContent = "登录 / 注册";
+    loginBtn.textContent = tt("chat.login_register");
     loginBtn.addEventListener("click", function (e) {
       e.preventDefault();
       var authOverlay = document.getElementById("auth-overlay");
@@ -247,7 +251,6 @@ function initializeChatWidget(widget) {
     banner.appendChild(action);
     banner.appendChild(loginBtn);
 
-    // 插入到表单位置之前
     panel.insertBefore(banner, form);
   }
 
@@ -264,14 +267,14 @@ function initializeChatWidget(widget) {
     var imageDataToSend = currentImageDataUrl;
     var imageNameToSend = currentImageName;
     input.value = "";
-    appendMessage("user", text || "发送了一张图片", currentImageDataUrl);
+    appendMessage("user", text || tt("chat.image_sent"), currentImageDataUrl);
     submitButton.disabled = true;
-    submitButton.textContent = "发送中";
+    submitButton.textContent = tt("chat.sending");
 
     chatHistory.push({ role: "user", text: text || "" });
 
     try {
-      const response = await fetch(resolveApiUrl(), {
+      var response = await fetch(resolveApiUrl(), {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -286,51 +289,52 @@ function initializeChatWidget(widget) {
         })
       });
 
-      const data = await response.json().catch(() => ({}));
+      var data = await response.json().catch(function() { return {}; });
 
-      // 检查是否需要登录（设备限流触发）
       if (data.error === "login_required") {
         rateLimited = true;
-        appendMessage("assistant", data.message || "免费咨询次数已用完，请登录后继续");
+        appendMessage("assistant", data.message || tt("chat.free_used"));
         showLoginBanner(panel, form);
         input.disabled = true;
         submitButton.disabled = true;
-        submitButton.textContent = "已锁定";
+        submitButton.textContent = tt("chat.locked");
         loading = false;
         clearImageSelection();
         return;
       }
 
-      const answer = data.answer || data.channelPayload?.displayText || "暂时没有获取到回复。";
+      var answer = data.answer || data.channelPayload ? (data.channelPayload && data.channelPayload.displayText) || tt("chat.no_reply") : tt("chat.no_reply");
+      if (data.answer) answer = data.answer;
+      else if (data.channelPayload && data.channelPayload.displayText) answer = data.channelPayload.displayText;
+      else answer = tt("chat.no_reply");
       chatHistory.push({ role: "assistant", text: answer });
       appendMessage("assistant", answer);
 
-      // 仅当 AI 明确判断需转人工时才提示（报价/施工/合作类问题）
       if (data.handoff && (data.handoff.handoff_readiness === "high" || data.handoff.lead_capture_needed)) {
-        appendMessage("assistant", "如需报价或人工跟进，请拨打 0779-8525688 / 18169771178，或留下您的联系方式。");
+        appendMessage("assistant", tt("chat.handoff"));
       }
     } catch (error) {
-      appendMessage("assistant", "当前咨询服务暂时不可用，请稍后再试或直接拨打 0779-8525688。");
+      appendMessage("assistant", tt("chat.service_unavailable"));
     } finally {
       loading = false;
       submitButton.disabled = false;
-      submitButton.textContent = "发送";
+      submitButton.textContent = tt("chat.send");
       clearImageSelection();
     }
   }
 
-  launcher.addEventListener("click", () => {
+  launcher.addEventListener("click", function() {
     if (window.innerWidth < 768) {
-      window.location.href = "/chat.html";
+      window.location.href = "/chat.html?lang=" + (I ? I.getLang() : 'zh-CN');
       return;
     }
     setOpen(!open);
   });
 
-  quickButtons.forEach((button) => {
-    button.addEventListener("click", () => {
+  quickButtons.forEach(function(button) {
+    button.addEventListener("click", function() {
       if (window.innerWidth < 768) {
-        window.location.href = "/chat.html?q=" + encodeURIComponent(button.getAttribute("data-quick") || "");
+        window.location.href = "/chat.html?lang=" + (I ? I.getLang() : 'zh-CN') + "&q=" + encodeURIComponent(button.getAttribute("data-quick") || "");
         return;
       }
       setOpen(true);
@@ -338,45 +342,45 @@ function initializeChatWidget(widget) {
     });
   });
 
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", function(event) {
     event.preventDefault();
     sendMessage(input.value.trim());
   });
 
-  document.addEventListener("click", (event) => {
+  document.addEventListener("click", function(event) {
     if (!widget.contains(event.target)) {
       setOpen(false);
     }
   });
 
-  document.addEventListener("auth-login-success", () => {
+  document.addEventListener("auth-login-success", function() {
     var banner = panel.querySelector(".chat-login-banner");
     if (banner) banner.remove();
     rateLimited = false;
     input.disabled = false;
     submitButton.disabled = false;
-    submitButton.textContent = "发送";
+    submitButton.textContent = tt("chat.send");
   });
 }
 
 function updateActiveNav() {
-  const sections = navLinks
-    .map((link) => {
-      const target = document.querySelector(link.getAttribute("href"));
-      return target ? { link, target } : null;
+  var sections = navLinks
+    .map(function(link) {
+      var target = document.querySelector(link.getAttribute("href"));
+      return target ? { link: link, target: target } : null;
     })
     .filter(Boolean);
 
-  const marker = window.scrollY + 140;
-  let activeLink = sections[0] ? sections[0].link : null;
+  var marker = window.scrollY + 140;
+  var activeLink = sections[0] ? sections[0].link : null;
 
-  sections.forEach(({ link, target }) => {
-    if (target.offsetTop <= marker) {
-      activeLink = link;
+  sections.forEach(function(s) {
+    if (s.target.offsetTop <= marker) {
+      activeLink = s.link;
     }
   });
 
-  navLinks.forEach((link) => {
+  navLinks.forEach(function(link) {
     link.classList.toggle("is-active", link === activeLink);
   });
 }
@@ -386,31 +390,33 @@ if (currentYear) {
 }
 
 if (mobileToggle && mobileNav) {
-  mobileToggle.addEventListener("click", () => {
+  mobileToggle.addEventListener("click", function() {
     setMobileOpen(mobileNav.hidden);
   });
 
-  // 滚动超过一屏自动收起菜单
-  let menuOpenedAt = 0;
-  let scrollAnchor = 0;
-  const origOpen = setMobileOpen;
-  setMobileOpen = function(v) { origOpen(v); if (v) { menuOpenedAt = Date.now(); scrollAnchor = window.scrollY; } };
+  var menuOpenedAt = 0;
+  var scrollAnchor = 0;
+  var origSetMobileOpen = setMobileOpen;
+  setMobileOpen = function(v) {
+    origSetMobileOpen(v);
+    if (v) { menuOpenedAt = Date.now(); scrollAnchor = window.scrollY; }
+  };
 
-  window.addEventListener("scroll", () => {
+  window.addEventListener("scroll", function() {
     if (!mobileNav.hidden && Date.now() - menuOpenedAt > 300 && Math.abs(window.scrollY - scrollAnchor) > 60) {
       setMobileOpen(false);
     }
   }, { passive: true });
 }
 
-sectionLinks.forEach((link) => {
-  link.addEventListener("click", (event) => {
-    const href = link.getAttribute("href");
+sectionLinks.forEach(function(link) {
+  link.addEventListener("click", function(event) {
+    var href = link.getAttribute("href");
     if (!href || href === "#") {
       return;
     }
 
-    const target = document.querySelector(href);
+    var target = document.querySelector(href);
     if (!target) {
       return;
     }
@@ -424,28 +430,39 @@ sectionLinks.forEach((link) => {
   });
 });
 
-document.querySelectorAll(".ai-chat").forEach((widget) => {
+document.querySelectorAll(".ai-chat").forEach(function(widget) {
   initializeChatWidget(widget);
 });
 
 if (goTopButton) {
-  goTopButton.addEventListener("click", () => {
+  goTopButton.addEventListener("click", function() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 }
 
-window.addEventListener("scroll", () => {
+window.addEventListener("scroll", function() {
   if (goTopButton) {
     goTopButton.classList.toggle("is-visible", window.scrollY > 320);
   }
   updateActiveNav();
 });
 
-window.addEventListener("load", () => {
+window.addEventListener("load", function() {
   updateActiveNav();
 });
 
-// ====== Auth Modal ======
+/* ====== Update chat.html links with current lang ====== */
+function updateChatLinks() {
+  var links = document.querySelectorAll('a[data-chat-link], a[href*="chat.html"]');
+  for (var i = 0; i < links.length; i++) {
+    var el = links[i];
+    var baseHref = (el.getAttribute('href') || './chat.html').split('?')[0];
+    el.setAttribute('href', baseHref + '?lang=' + (I ? I.getLang() : 'zh-CN'));
+  }
+}
+updateChatLinks();
+
+/* ====== Auth Modal ====== */
 (function initAuth() {
   var modalHtml =
     '<div id="auth-overlay" class="auth-overlay" hidden>' +
@@ -453,38 +470,37 @@ window.addEventListener("load", () => {
       '<div class="auth-dialog">' +
         '<button class="auth-dialog-close" type="button">&times;</button>' +
         '<div class="auth-tabs">' +
-          '<button class="auth-tab is-active" data-auth-tab="login">登录</button>' +
-          '<button class="auth-tab" data-auth-tab="register">注册</button>' +
+          '<button class="auth-tab is-active" data-auth-tab="login" data-i18n="auth.login">登录</button>' +
+          '<button class="auth-tab" data-auth-tab="register" data-i18n="auth.register">注册</button>' +
         '</div>' +
         '<form id="auth-form-login" class="auth-form">' +
-          '<input name="email" type="email" placeholder="邮箱" required autocomplete="email">' +
-          '<input name="password" type="password" placeholder="密码" required minlength="6" autocomplete="current-password">' +
-          '<button type="submit">登录</button>' +
+          '<input name="email" type="email" placeholder="邮箱" required autocomplete="email" data-i18n-placeholder="auth.email">' +
+          '<input name="password" type="password" placeholder="密码" required minlength="6" autocomplete="current-password" data-i18n-placeholder="auth.password">' +
+          '<button type="submit" data-i18n="auth.login">登录</button>' +
         '</form>' +
-        '<p class="auth-forgot"><a id="auth-forgot-link" href="javascript:;">忘记密码？</a></p>' +
+        '<p class="auth-forgot"><a id="auth-forgot-link" href="javascript:;" data-i18n="auth.forgot_password">忘记密码？</a></p>' +
         '<form id="auth-form-register" class="auth-form" hidden>' +
-          '<input name="email" type="email" placeholder="邮箱" required autocomplete="email">' +
-          '<input name="password" type="password" placeholder="密码（至少 6 位）" required minlength="6">' +
-          '<input name="nickname" type="text" placeholder="昵称（选填）">' +
-          '<button type="submit">获取验证码</button>' +
+          '<input name="email" type="email" placeholder="邮箱" required autocomplete="email" data-i18n-placeholder="auth.email">' +
+          '<input name="password" type="password" placeholder="密码（至少 6 位）" required minlength="6" data-i18n-placeholder="auth.password_hint">' +
+          '<input name="nickname" type="text" placeholder="昵称（选填）" data-i18n-placeholder="auth.nickname">' +
+          '<button type="submit" data-i18n="auth.get_code">获取验证码</button>' +
         '</form>' +
         '<form id="auth-form-verify" class="auth-form" hidden>' +
-          '<p class="auth-verify-hint">验证码已发送至 <strong id="auth-verify-target"></strong></p>' +
-          '<p class="auth-verify-hint">验证码已发送至您的邮箱，10分钟内有效</p>' +
-          '<p class="auth-verify-hint auth-verify-spam">如未收到请检查垃圾邮件箱</p>' +
-          '<input name="code" type="text" placeholder="6 位验证码" required pattern="[0-9]{6}" maxlength="6" inputmode="numeric" autocomplete="one-time-code">' +
-          '<button type="submit">验证并激活</button>' +
+          '<p class="auth-verify-hint" data-i18n="auth.code_sent_full">验证码已发送至您的邮箱，10分钟内有效</p>' +
+          '<p class="auth-verify-hint auth-verify-spam" data-i18n="auth.check_spam">如未收到请检查垃圾邮件箱</p>' +
+          '<input name="code" type="text" placeholder="6 位验证码" required pattern="[0-9]{6}" maxlength="6" inputmode="numeric" autocomplete="one-time-code" data-i18n-placeholder="auth.code_placeholder">' +
+          '<button type="submit" data-i18n="auth.verify_activate">验证并激活</button>' +
         '</form>' +
         '<form id="auth-form-forgot" class="auth-form" hidden>' +
-          '<p class="auth-verify-hint">输入注册邮箱，我们将发送重置验证码</p>' +
-          '<input name="email" type="email" placeholder="注册邮箱" required autocomplete="email">' +
-          '<button type="submit">获取重置验证码</button>' +
+          '<p class="auth-verify-hint" data-i18n="auth.enter_email">输入注册邮箱，我们将发送重置验证码</p>' +
+          '<input name="email" type="email" placeholder="注册邮箱" required autocomplete="email" data-i18n-placeholder="auth.email">' +
+          '<button type="submit" data-i18n="auth.get_code">获取重置验证码</button>' +
         '</form>' +
         '<form id="auth-form-reset" class="auth-form" hidden>' +
-          '<p class="auth-verify-hint">重置验证码已发送至 <strong id="auth-reset-target"></strong></p>' +
-          '<input name="code" type="text" placeholder="6 位验证码" required pattern="[0-9]{6}" maxlength="6" inputmode="numeric" autocomplete="one-time-code">' +
-          '<input name="newPassword" type="password" placeholder="新密码（至少 6 位）" required minlength="6">' +
-          '<button type="submit">重置密码</button>' +
+          '<p class="auth-verify-hint"><span data-i18n="auth.reset_code_sent">重置验证码已发送至</span> <strong id="auth-reset-target"></strong></p>' +
+          '<input name="code" type="text" placeholder="6 位验证码" required pattern="[0-9]{6}" maxlength="6" inputmode="numeric" autocomplete="one-time-code" data-i18n-placeholder="auth.code_placeholder">' +
+          '<input name="newPassword" type="password" placeholder="新密码（至少 6 位）" required minlength="6" data-i18n-placeholder="auth.new_password">' +
+          '<button type="submit" data-i18n="auth.reset_password_btn">重置密码</button>' +
         '</form>' +
         '<p class="auth-error" id="auth-error-msg" hidden></p>' +
       '</div>' +
@@ -497,7 +513,6 @@ window.addEventListener("load", () => {
   var registerForm = document.getElementById("auth-form-register");
   var verifyForm = document.getElementById("auth-form-verify");
   var errorEl = document.getElementById("auth-error-msg");
-  var verifyTarget = document.getElementById("auth-verify-target");
   var forgotForm = document.getElementById("auth-form-forgot");
   var resetForm = document.getElementById("auth-form-reset");
   var forgotLink = document.getElementById("auth-forgot-link");
@@ -507,6 +522,9 @@ window.addEventListener("load", () => {
   var backdrop = overlay.querySelector(".auth-overlay-backdrop");
   var pendingEmail = "";
   var pendingForgotEmail = "";
+
+  /* Apply i18n to the newly inserted auth modal */
+  if (I) I.apply();
 
   function showError(msg) {
     errorEl.textContent = msg;
@@ -584,34 +602,31 @@ window.addEventListener("load", () => {
     var buttons = document.querySelectorAll(".chat-auth-btn");
     buttons.forEach(function (btn) {
       if (user) {
-        btn.textContent = user.nickname || user.email || "已登录";
-        btn.title = "点击退出登录";
+        btn.textContent = user.nickname || user.email || tt("auth.logged_in");
+        btn.title = tt("auth.logout_confirm");
         btn.classList.add("is-logged-in");
       } else {
-        btn.textContent = "登录";
-        btn.title = "登录 / 注册";
+        btn.textContent = tt("auth.login");
+        btn.title = tt("auth.login_register") || tt("chat.login_register");
         btn.classList.remove("is-logged-in");
       }
     });
   }
 
-  // Tab switching
   tabButtons.forEach(function (btn) {
     btn.addEventListener("click", function () {
       switchTab(btn.getAttribute("data-auth-tab"));
     });
   });
 
-  // Close handlers
   closeBtn.addEventListener("click", hideOverlay);
   backdrop.addEventListener("click", hideOverlay);
 
-  // Auth button click - toggle login/logout
   document.addEventListener("click", function (e) {
     var btn = e.target.closest(".chat-auth-btn");
     if (!btn) return;
     if (btn.classList.contains("is-logged-in")) {
-      if (confirm("确定要退出登录吗？")) {
+      if (confirm(tt("auth.logout_confirm"))) {
         logout();
       }
     } else {
@@ -619,14 +634,12 @@ window.addEventListener("load", () => {
     }
   });
 
-  // Escape key to close
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && !overlay.hidden) {
       hideOverlay();
     }
   });
 
-  // Login form submit
   loginForm.addEventListener("submit", function (e) {
     e.preventDefault();
     clearError();
@@ -644,15 +657,14 @@ window.addEventListener("load", () => {
         if (data.ok) {
           saveAuth(data.token, data.user);
         } else {
-          showError(data.message || "登录失败");
+          showError(data.message || tt("auth.login_failed"));
         }
       })
       .catch(function () {
-        showError("网络错误，请稍后重试");
+        showError(tt("auth.network_error"));
       });
   });
 
-  // Register form submit
   registerForm.addEventListener("submit", function (e) {
     e.preventDefault();
     clearError();
@@ -670,20 +682,18 @@ window.addEventListener("load", () => {
       .then(function (data) {
         if (data.ok) {
           pendingEmail = email;
-          verifyTarget.textContent = email;
           registerForm.hidden = true;
           verifyForm.hidden = false;
           loginForm.hidden = true;
         } else {
-          showError(data.message || "注册失败");
+          showError(data.message || tt("auth.register_failed"));
         }
       })
       .catch(function () {
-        showError("网络错误，请稍后重试");
+        showError(tt("auth.network_error"));
       });
   });
 
-  // Verify form submit
   verifyForm.addEventListener("submit", function (e) {
     e.preventDefault();
     clearError();
@@ -700,15 +710,14 @@ window.addEventListener("load", () => {
         if (data.ok) {
           saveAuth(data.token, data.user);
         } else {
-          showError(data.message || "验证失败");
+          showError(data.message || tt("auth.verify_failed"));
         }
       })
       .catch(function () {
-        showError("网络错误，请稍后重试");
+        showError(tt("auth.network_error"));
       });
   });
 
-  // Forgot password link
   forgotLink.addEventListener("click", function (e) {
     e.preventDefault();
     switchTab("");
@@ -740,10 +749,10 @@ window.addEventListener("load", () => {
           resetForm.hidden = false;
           clearError();
         } else {
-          showError(data.message || "发送失败");
+          showError(data.message || tt("auth.send_failed"));
         }
       })
-      .catch(function () { showError("网络错误，请稍后重试"); });
+      .catch(function () { showError(tt("auth.network_error")); });
   });
 
   resetForm.addEventListener("submit", function (e) {
@@ -760,18 +769,17 @@ window.addEventListener("load", () => {
       .then(function (data) {
         if (data.ok) {
           clearError();
-          alert("密码已重置，请用新密码登录");
+          alert(tt("auth.password_reset_ok"));
           switchTab("login");
           forgotForm.reset();
           resetForm.reset();
         } else {
-          showError(data.message || "重置失败");
+          showError(data.message || tt("auth.reset_failed"));
         }
       })
-      .catch(function () { showError("网络错误，请稍后重试"); });
+      .catch(function () { showError(tt("auth.network_error")); });
   });
 
-  // Check existing auth on page load
   (function checkExistingAuth() {
     var token = localStorage.getItem(STORAGE_AUTH_TOKEN);
     if (!token) {

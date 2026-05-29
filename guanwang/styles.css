@@ -283,7 +283,7 @@ a:focus {
   color: #fff;
 }
 
-.mobile-nav .chat-launcher {
+.mobile-nav .mobile-chat {
   justify-self: center;
 }
 
@@ -1851,4 +1851,281 @@ a:focus {
     padding: 24px 18px 22px;
     border-radius: 14px;
   }
+}
+
+/* ============================================================
+   Language Switcher
+   ============================================================ */
+
+/* ── Desktop Lang Switcher ── */
+.lang-switcher {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.lang-switcher-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid rgba(23, 50, 68, 0.12);
+  border-radius: 999px;
+  background: #fff;
+  color: #315263;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 180ms ease;
+  white-space: nowrap;
+}
+
+.lang-switcher-toggle:hover {
+  border-color: #2f7a4f;
+  color: #2f7a4f;
+  background: #f6faf7;
+}
+
+.lang-switcher-toggle .lang-flag {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.lang-switcher-toggle .lang-arrow {
+  width: 10px;
+  height: 10px;
+  color: inherit;
+  transition: transform 180ms ease;
+}
+
+.lang-switcher-toggle[aria-expanded="true"] .lang-arrow {
+  transform: rotate(180deg);
+}
+
+/* ── Dropdown Menu ── */
+.lang-switcher-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 170px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(23, 50, 68, 0.16);
+  border: 1px solid rgba(23, 50, 68, 0.06);
+  overflow: hidden;
+  z-index: 1100;
+  padding: 4px 0;
+}
+
+.lang-switcher-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  color: #315263;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background 120ms ease;
+}
+
+.lang-switcher-menu button:hover {
+  background: #f4faf6;
+  color: #2f7a4f;
+}
+
+.lang-switcher-menu button.active {
+  background: #e8f5e9;
+  color: #2f7a4f;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.lang-switcher-menu button .lang-flag {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* ── Mobile Lang Switcher ── */
+.lang-switcher-mobile {
+  padding: 6px 0;
+}
+
+.lang-switcher-mobile-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid rgba(23, 50, 68, 0.12);
+  border-radius: 12px;
+  background: #f9fafb;
+  color: #315263;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+
+.lang-switcher-mobile-toggle:hover,
+.lang-switcher-mobile-toggle[aria-expanded="true"] {
+  border-color: #2f7a4f;
+  color: #2f7a4f;
+  background: #f6faf7;
+}
+
+.lang-switcher-mobile-toggle .lang-flag {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.lang-switcher-mobile-toggle .lang-arrow {
+  transition: transform 180ms ease;
+  margin-left: 2px;
+}
+
+.lang-switcher-mobile-toggle[aria-expanded="true"] .lang-arrow {
+  transform: rotate(180deg);
+}
+
+.lang-switcher-mobile-menu {
+  margin-top: 4px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(23, 50, 68, 0.12);
+  border: 1px solid rgba(23, 50, 68, 0.06);
+  overflow: hidden;
+  padding: 4px 0;
+}
+
+.lang-switcher-mobile-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  color: #315263;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background 120ms ease;
+}
+
+.lang-switcher-mobile-menu button:hover {
+  background: #f4faf6;
+  color: #2f7a4f;
+}
+
+.lang-switcher-mobile-menu button.active {
+  background: #e8f5e9;
+  color: #2f7a4f;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.lang-switcher-mobile-menu button .lang-flag {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* ── Lang Switcher Arrow SVG ── */
+.lang-switcher-arrow {
+  width: 10px;
+  height: 10px;
+  color: inherit;
+  transition: transform 180ms ease;
+  flex-shrink: 0;
+}
+
+.lang-switcher-toggle[aria-expanded="true"] .lang-switcher-arrow,
+.lang-switcher-mobile-toggle[aria-expanded="true"] .lang-switcher-arrow {
+  transform: rotate(180deg);
+}
+
+/* ── Responsive: hide desktop switcher, show mobile ── */
+.lang-switcher-mobile {
+  display: none;
+}
+
+@media screen and (max-width: 767px) {
+  .nav-actions .lang-switcher {
+    display: none;
+  }
+
+  .lang-switcher-mobile {
+    display: block;
+  }
+}
+
+/* ── Chat Page Lang Switcher ── */
+.chat-lang-switch {
+  position: relative;
+  flex-shrink: 0;
+}
+.chat-lang-switch-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.chat-lang-switch-toggle .lang-flag {
+  font-size: 14px;
+  line-height: 1;
+}
+.chat-lang-switch-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.chat-lang-switch-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  min-width: 150px;
+  overflow: hidden;
+  z-index: 200;
+}
+.chat-lang-switch-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  color: #333;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+.chat-lang-switch-menu button:hover {
+  background: #f0f7f1;
+}
+.chat-lang-switch-menu button.active {
+  background: #e8f5e9;
+  color: #2f7a4f;
+  font-weight: 600;
+}
+.chat-lang-switch-menu button .lang-flag {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
 }

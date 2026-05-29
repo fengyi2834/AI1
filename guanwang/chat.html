@@ -6,6 +6,7 @@
   <title>亿库 AI 客服</title>
   <meta name="description" content="亿库硅藻板 AI 在线客服">
   <link rel="stylesheet" href="./styles.css?v=20260527">
+  <script src="./i18n.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
@@ -26,6 +27,28 @@
     .chat-page-head .head-info { flex: 1; min-width: 0; }
     .chat-page-head .head-info strong { font-size: 16px; display: block; }
     .chat-page-head .head-info span { font-size: 11px; color: rgba(255,255,255,0.7); }
+
+    /* ── Chat Page Lang Switcher ── */
+    .chat-lang-switch { position: relative; flex-shrink: 0; }
+    .chat-lang-switch-toggle {
+      display: flex; align-items: center; gap: 4px;
+      padding: 5px 8px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.1); color: #fff; font-size: 12px; cursor: pointer;
+    }
+    .chat-lang-switch-toggle .lang-flag { font-size: 14px; }
+    .chat-lang-switch-menu {
+      position: absolute; top: calc(100% + 4px); right: 0;
+      background: #fff; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      min-width: 150px; overflow: hidden; z-index: 200;
+    }
+    .chat-lang-switch-menu button {
+      display: flex; align-items: center; gap: 8px;
+      width: 100%; padding: 10px 14px; border: none; background: none;
+      color: #333; font-size: 13px; cursor: pointer; text-align: left;
+    }
+    .chat-lang-switch-menu button:hover { background: #f0f7f1; }
+    .chat-lang-switch-menu button.active { background: #e8f5e9; color: #2f7a4f; font-weight: 600; }
+
     .chat-page-head .auth-btn {
       padding: 6px 14px; border-radius: 16px; border: none;
       background: #fff; color: #3370FF; font-size: 13px; cursor: pointer; white-space: nowrap; flex-shrink: 0; font-weight: 600;
@@ -93,23 +116,37 @@
     .auth-dialog .auth-hint { font-size: 12px; color: #888; margin-bottom: 10px; }
   </style>
 </head>
-<body>
+<body data-page="chat">
   <div class="chat-page">
     <div class="chat-page-head">
-      <button class="back-btn" onclick="history.back()">←</button>
+      <button class="back-btn" onclick="history.back()">&larr;</button>
       <div class="head-info">
-        <strong>亿库 AI 客服</strong>
-        <span>在线咨询</span>
+        <strong data-i18n="chat.title">亿库 AI 客服</strong>
+        <span data-i18n="chatpage.chat">在线咨询</span>
       </div>
-      <button class="auth-btn" id="authBtn" title="登录">登录</button>
+
+      <!-- 语言切换器 -->
+      <div class="chat-lang-switch">
+        <button class="chat-lang-switch-toggle" type="button" aria-expanded="false" aria-label="切换语言">
+          <span class="lang-flag">🇨🇳</span>
+        </button>
+        <div class="chat-lang-switch-menu" hidden>
+          <button type="button" data-lang="zh-CN"><span class="lang-flag">🇨🇳</span><span>简体中文</span></button>
+          <button type="button" data-lang="en-US"><span class="lang-flag">🇺🇸</span><span>English</span></button>
+          <button type="button" data-lang="ja-JP"><span class="lang-flag">🇯🇵</span><span>日本語</span></button>
+          <button type="button" data-lang="ko-KR"><span class="lang-flag">🇰🇷</span><span>한국어</span></button>
+        </div>
+      </div>
+
+      <button class="auth-btn" id="authBtn" title="登录" data-i18n-title="chat.login">登录</button>
     </div>
 
     <div class="chat-page-quick">
-      <button data-q="你们产品适合哪些场景？">适用场景</button>
-      <button data-q="学校医院能不能用？">学校/医院</button>
-      <button data-q="规格有哪些？">产品规格</button>
-      <button data-q="怎么报价？">如何报价</button>
-      <button data-q="如何联系销售？">联系销售</button>
+      <button data-q="你们产品适合哪些场景？" data-i18n="quick.scenarios_short">适用场景</button>
+      <button data-q="学校医院能不能用？" data-i18n="quick.school_hospital_short">学校/医院</button>
+      <button data-q="规格有哪些？" data-i18n="quick.specs_short">产品规格</button>
+      <button data-q="怎么报价？" data-i18n="quick.pricing_short">如何报价</button>
+      <button data-q="如何联系销售？" data-i18n="quick.contact_sales_short">联系销售</button>
     </div>
 
     <div class="chat-page-body" id="chatBody"></div>
@@ -118,12 +155,12 @@
       <div>
         <div class="img-preview-bar" id="imgPreview">
           <span id="imgName"></span>
-          <span class="remove" id="imgRemove">✕</span>
+          <span class="remove" id="imgRemove">&times;</span>
         </div>
         <div style="display:flex;gap:6px;align-items:flex-end">
-          <label class="img-btn" id="imgBtn" title="发送图片">📷<input type="file" accept="image/*" style="display:none" id="imgInput"></label>
-          <input type="text" id="msgInput" placeholder="请输入你的问题" autocomplete="off">
-          <button class="send-btn" id="sendBtn">发送</button>
+          <label class="img-btn" id="imgBtn" title="发送图片" data-i18n-title="chat.send_image">&#x1F4F7;<input type="file" accept="image/*" style="display:none" id="imgInput"></label>
+          <input type="text" id="msgInput" placeholder="请输入你的问题" autocomplete="off" data-i18n-placeholder="chat.placeholder">
+          <button class="send-btn" id="sendBtn" data-i18n="chat.send">发送</button>
         </div>
       </div>
     </div>
@@ -148,9 +185,12 @@
 
   <script>
     (function() {
+      var I = window.I18N;
+      var t = function(k) { return I ? I.t(k) : k; };
+
       var STORAGE_TOKEN = 'yiku_auth_token';
       var STORAGE_USER = 'yiku_auth_user';
-      var WELCOME = '你好，我是亿库 AI 客服。可以咨询产品适用场景、规格、报价方式和销售联系方式。';
+      var WELCOME = t('chat.welcome');
 
       var body = document.getElementById('chatBody');
       var input = document.getElementById('msgInput');
@@ -203,11 +243,11 @@
       function updateAuthUI() {
         var u = JSON.parse(localStorage.getItem(STORAGE_USER) || 'null');
         if (u) {
-          authBtn.textContent = u.nickname || u.email || '已登录';
+          authBtn.textContent = u.nickname || u.email || t('auth.logged_in');
           authBtn.classList.add('is-logged-in');
           userId = 'user-' + (u.email || 'u');
         } else {
-          authBtn.textContent = '登录';
+          authBtn.textContent = t('auth.login');
           authBtn.classList.remove('is-logged-in');
           userId = 'anon-' + Math.random().toString(36).slice(2, 12);
         }
@@ -230,7 +270,7 @@
 
       authBtn.addEventListener('click', function() {
         if (authBtn.classList.contains('is-logged-in')) {
-          if (confirm('确定退出登录？')) {
+          if (confirm(t('auth.logout_confirm'))) {
             localStorage.removeItem(STORAGE_TOKEN);
             localStorage.removeItem(STORAGE_USER);
             updateAuthUI();
@@ -266,7 +306,7 @@
             updateAuthUI();
             authOverlay.hidden = true;
           } else {
-            showAuthError(d.message || '登录失败');
+            showAuthError(d.message || t('auth.login_failed'));
           }
         });
       });
@@ -284,7 +324,7 @@
             verifyForm.hidden = false;
             hideAuthError();
           } else {
-            showAuthError(d.message || '注册失败');
+            showAuthError(d.message || t('auth.register_failed'));
           }
         });
       });
@@ -305,7 +345,7 @@
               switchTab('login');
             });
           } else {
-            showAuthError(d.message || '验证失败');
+            showAuthError(d.message || t('auth.verify_failed'));
           }
         });
       });
@@ -337,7 +377,7 @@
             resetForm.hidden = false;
             hideAuthError();
           } else {
-            showAuthError(d.message || '发送失败');
+            showAuthError(d.message || t('auth.send_failed'));
           }
         });
       });
@@ -349,12 +389,12 @@
         api('/api/auth/reset-password', { email: pendingForgotEmail, code: code, newPassword: newPw }).then(function(d) {
           if (d.ok) {
             showAuthError(''); hideAuthError();
-            alert('密码已重置，请用新密码登录');
+            alert(t('auth.password_reset_ok'));
             switchTab('login');
             resetForm.reset();
             forgotForm.reset();
           } else {
-            showAuthError(d.message || '重置失败');
+            showAuthError(d.message || t('auth.reset_failed'));
           }
         });
       });
@@ -362,8 +402,8 @@
       imgInput.addEventListener('change', function() {
         var f = imgInput.files[0];
         if (!f) return;
-        if (!['image/png','image/jpeg','image/webp'].includes(f.type)) { alert('仅支持 PNG/JPEG/WebP'); return; }
-        if (f.size > 10*1024*1024) { alert('图片不超过10MB'); return; }
+        if (!['image/png','image/jpeg','image/webp'].includes(f.type)) { alert(t('img.unsupported_format')); return; }
+        if (f.size > 10*1024*1024) { alert(t('img.too_large_short')); return; }
         var reader = new FileReader();
         reader.onload = function() {
           currentImg = reader.result;
@@ -385,9 +425,9 @@
         var imgToSend = currentImg;
         var imgNameToSend = currentImgName;
         input.value = '';
-        addMsg('user', text || '发送了一张图片', imgToSend);
+        addMsg('user', text || t('chat.image_sent'), imgToSend);
         sendBtn.disabled = true;
-        sendBtn.textContent = '...';
+        sendBtn.textContent = t('chat.sending');
         clearImg();
 
         api('/api/ai/chat', {
@@ -397,17 +437,17 @@
           history: []
         }).then(function(d) {
           if (d.error === 'login_required') {
-            addMsg('assistant', '免费咨询次数已用完，请登录后继续。');
+            addMsg('assistant', t('chatpage.login_required'));
             authOverlay.hidden = false;
           } else {
-            addMsg('assistant', d.answer || '暂时没有获取到回复。');
+            addMsg('assistant', d.answer || t('chat.no_reply'));
           }
         }).catch(function() {
-          addMsg('assistant', '网络异常，请稍后重试。');
+          addMsg('assistant', t('chat.network_error'));
         }).finally(function() {
           loading = false;
           sendBtn.disabled = false;
-          sendBtn.textContent = '发送';
+          sendBtn.textContent = t('chat.send');
         });
       }
 
@@ -418,8 +458,41 @@
         b.addEventListener('click', function() { input.value = b.getAttribute('data-q'); send(); });
       });
 
+      // Chat page lang switcher toggle
+      (function initChatLangSwitch() {
+        var cToggle = document.querySelector('.chat-lang-switch-toggle');
+        var cMenu = document.querySelector('.chat-lang-switch-menu');
+        if (!cToggle || !cMenu) return;
+
+        cToggle.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var isOpen = !cMenu.hidden;
+          cMenu.hidden = isOpen;
+          cToggle.setAttribute('aria-expanded', String(!isOpen));
+        });
+
+        cMenu.querySelectorAll('button').forEach(function(b) {
+          b.addEventListener('click', function() {
+            var lang = b.getAttribute('data-lang');
+            if (lang && I) { I.setLang(lang); }
+            cMenu.hidden = true;
+            cToggle.setAttribute('aria-expanded', 'false');
+          });
+        });
+
+        document.addEventListener('click', function(e) {
+          if (!e.target.closest('.chat-lang-switch')) {
+            cMenu.hidden = true;
+            cToggle.setAttribute('aria-expanded', 'false');
+          }
+        });
+      })();
+
       updateAuthUI();
       addMsg('assistant', WELCOME);
+
+      // Apply i18n to auth modal dynamic content
+      if (I) { I.apply(); }
 
       var q = new URLSearchParams(window.location.search).get('q');
       if (q) {
