@@ -34,3 +34,4 @@ guanwang/*.pdf
 # OS
 .DS_Store
 Thumbs.db
+scripts/fastgpt-contact-import.js
