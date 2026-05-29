@@ -1,0 +1,10 @@
+{
+  "title_rename": "이름 변경",
+  "action_rename": "이름 변경",
+  "action_delete": "삭제",
+  "ph_input": "입력해 주세요",
+  "msg_input_new_name": "새 이름을 입력해 주세요",
+  "msg_update_success": "변경 성공",
+  "title_delete_confirm": "삭제 확인",
+  "msg_confirm_delete": "이 기록을 삭제하시겠습니까?"
+}

@@ -1,0 +1,52 @@
+# Mac OS X files
+.DS_Store
+.vscode
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
+.glide/
+
+# Dependency directories (remove the comment below to include it)
+#vendor/
+
+# JetBrains
+.idea
+
+# log
+logs/
+*.log
+
+# Ignore all Go test files
+*_test.go
+
+config_dev.ini
+docker/dev/
+static/home/
+config_dev/
+Makefile
+
+# Runtime data and generated files
+volumes/
+static/public/download/*
+!static/public/download/.gitignore
+static/public/export/
+static/public/client_side/
+
+# Frontend local dependencies and outputs
+node_modules/
+dist/
+
+# Local agent/editor metadata
+**/.iflow/
+**/.opencode/

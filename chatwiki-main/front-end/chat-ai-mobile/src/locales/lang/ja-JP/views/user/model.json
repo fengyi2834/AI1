@@ -1,0 +1,20 @@
+{
+  "addModel": "モデル追加",
+  "addModelButton": "新規モデル",
+  "api_endpoint": "API ドメイン",
+  "api_key": "API キー",
+  "api_version": "API バージョン",
+  "canAddAModel": "追加可能なモデル",
+  "deleteModel": "モデル削除",
+  "deleteModelContent": "このモデルを削除してもよろしいですか？",
+  "deployment_name": "デプロイ名",
+  "editModelButton": "設定変更",
+  "getApikeyText": "APIキーの取得方法は？",
+  "modelConfigButton": "モデル設定",
+  "model_name": "モデル名",
+  "model_type": "モデルタイプ",
+  "model_types": "モデルタイプ",
+  "modelsHaveBeenAdded": "追加済みモデル",
+  "secret_key": "シークレットキー",
+  "viewModelButton": "モデル表示"
+}

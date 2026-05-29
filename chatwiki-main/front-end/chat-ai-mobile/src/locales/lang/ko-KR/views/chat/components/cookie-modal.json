@@ -1,0 +1,6 @@
+{
+  "title_privacy_consent": "ChatWiki 개인정보 권한 안내",
+  "msg_cookie_description": "당사는 검색 경험 향상, 개인 맞춤형 콘텐츠 제공 및 트래픽 분석을 위해 쿠키를 사용합니다. '모든 쿠키 허용'을 클릭하면 쿠키 사용에 동의하게 됩니다. 자세한 내용은 <a href=\"{cookiePolicyUrl}\">[쿠키 정책]</a> 및 <a href=\"{privacyPolicyUrl}\">[개인정보 처리방침]</a>을 확인해 주세요.",
+  "btn_accept_all": "모든 쿠키 허용",
+  "btn_decline": "거부"
+}

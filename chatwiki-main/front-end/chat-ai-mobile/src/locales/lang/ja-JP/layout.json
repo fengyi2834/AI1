@@ -1,0 +1,108 @@
+{
+  "footer": { "onlinePreview": "オンラインプレビュー", "onlineDocument": "オンラインドキュメント" },
+  "header": {
+    "dropdownItemDoc": "ドキュメント",
+    "dropdownItemLoginOut": "システムからログアウト",
+
+    "tooltipErrorLog": "エラーログ",
+    "tooltipLock": "画面ロック",
+    "tooltipNotify": "メッセージ通知",
+
+    "tooltipEntryFull": "全画面",
+    "tooltipExitFull": "全画面終了",
+
+    "lockScreenPassword": "ロック画面パスワード",
+    "lockScreen": "画面ロック",
+    "lockScreenBtn": "ロック",
+
+    "home": "ホーム"
+  },
+  "multipleTab": {
+    "reload": "再読み込み",
+    "close": "タブを閉じる",
+    "closeLeft": "左側のタブを閉じる",
+    "closeRight": "右側のタブを閉じる",
+    "closeOther": "他のタブを閉じる",
+    "closeAll": "すべてのタブを閉じる"
+  },
+  "setting": {
+    "contentModeFull": "フロー",
+    "contentModeFixed": "固定幅",
+    "topMenuAlignLeft": "左寄せ",
+    "topMenuAlignRight": "右寄せ",
+    "topMenuAlignCenter": "中央寄せ",
+    "menuTriggerNone": "表示しない",
+    "menuTriggerBottom": "下部",
+    "menuTriggerTop": "上部",
+    "menuTypeSidebar": "左サイドバーモード",
+    "menuTypeMixSidebar": "左サイドバー混合モード",
+    "menuTypeMix": "トップメニュー混合モード",
+    "menuTypeTopMenu": "トップメニューモード",
+
+    "on": "オン",
+    "off": "オフ",
+    "minute": "分",
+
+    "operatingTitle": "操作成功",
+    "operatingContent": "コピー成功、src/settings/projectSetting.ts で設定を変更してください！",
+    "resetSuccess": "リセット成功！",
+
+    "copyBtn": "コピー",
+    "clearBtn": "キャッシュをクリアしてログインページに戻る",
+
+    "drawerTitle": "プロジェクト設定",
+
+    "darkMode": "テーマ",
+    "navMode": "ナビゲーションモード",
+    "interfaceFunction": "インターフェース機能",
+    "interfaceDisplay": "インターフェース表示",
+    "animation": "アニメーション",
+    "splitMenu": "メニュー分割",
+    "closeMixSidebarOnChange": "ページ切り替え時にメニューを閉じる",
+
+    "sysTheme": "システムテーマ",
+    "headerTheme": "ヘッダーテーマ",
+    "sidebarTheme": "メニューテーマ",
+
+    "menuDrag": "サイドメニュードラッグ",
+    "menuSearch": "メニュー検索",
+    "menuAccordion": "サイドメニューアコーディオンモード",
+    "menuCollapse": "メニュー折りたたみ",
+    "collapseMenuDisplayName": "折りたたみメニュー表示名",
+    "topMenuLayout": "トップメニューレイアウト",
+    "menuCollapseButton": "メニュー折りたたみボタン",
+    "contentMode": "コンテンツ領域の幅",
+    "expandedMenuWidth": "メニュー展開幅",
+
+    "breadcrumb": "パンくずリスト",
+    "breadcrumbIcon": "パンくずリストアイコン",
+    "tabs": "タブ",
+    "tabDetail": "タブ詳細",
+    "tabsQuickBtn": "タブクイックボタン",
+    "tabsRedoBtn": "タブ更新ボタン",
+    "tabsFoldBtn": "タブ折りたたみボタン",
+    "sidebar": "左サイドバー",
+    "header": "ヘッダー",
+    "footer": "フッター",
+    "fullContent": "全画面コンテンツ",
+    "grayMode": "グレーモード",
+    "colorWeak": "色弱モード",
+
+    "progress": "トッププログレスバー",
+    "switchLoading": "ローディング切替",
+    "switchAnimation": "アニメーション切替",
+    "animationType": "アニメーションタイプ",
+
+    "autoScreenLock": "自動画面ロック",
+    "notAutoScreenLock": "自動画面ロックしない",
+
+    "fixedHeader": "ヘッダー固定",
+    "fixedSideBar": "サイドバー固定",
+
+    "mixSidebarTrigger": "混合メニュー表示方式",
+    "triggerHover": "ホバー",
+    "triggerClick": "クリック",
+
+    "mixSidebarFixed": "展開メニュー固定"
+  }
+}

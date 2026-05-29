@@ -1,0 +1,17 @@
+{
+  "searching_knowledge_base": "지식 베이스 검색 중...",
+  "found_documents": "{count}개의 지식 베이스 문서 검색됨",
+  "deep_thinking": "깊이 생각 중...",
+  "deep_thinking_completed": "깊이 생각 완료",
+  "featured": "추천",
+  "copy": "복사",
+  "like": "좋아요",
+  "feedback_title": "답변 피드백",
+  "feedback_placeholder": "답변이 만족스럽지 않은 이유를 알려주세요",
+  "cancel": "취소",
+  "submit": "제출",
+  "dislike": "싫어요",
+  "copy_success": "복사 성공",
+  "operation_success": "작업 성공",
+  "thanks_for_feedback": "피드백 감사합니다"
+}

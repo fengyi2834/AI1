@@ -1,0 +1,9 @@
+{
+  "status_loading": "로딩 중",
+  "status_playing": "재생 중",
+  "hint_click_to_pause": "(클릭하여 일시 정지)",
+  "label_voice_message": "음성 메시지",
+  "hint_click_to_play": "(클릭하여 재생)",
+  "msg_playback_failed": "재생 실패:",
+  "msg_audio_playback_error": "오디오 재생 오류"
+}

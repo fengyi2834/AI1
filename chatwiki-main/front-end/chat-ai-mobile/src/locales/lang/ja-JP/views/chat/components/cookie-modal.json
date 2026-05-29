@@ -1,0 +1,6 @@
+{
+  "title_privacy_consent": "ChatWiki プライバシー許可のお知らせ",
+  "msg_cookie_description": "当サイトでは、閲覧体験の向上、パーソナライズされたコンテンツの提供、およびトラフィック分析のためにCookieを使用しています。「すべてのCookieを受け入れる」をクリックすると、Cookieの使用に同意したことになります。詳細については、<a href=\"{cookiePolicyUrl}\">[Cookieポリシー]</a> および <a href=\"{privacyPolicyUrl}\">[プライバシーポリシー]</a> をご確認ください。",
+  "btn_accept_all": "すべてのCookieを受け入れる",
+  "btn_decline": "拒否"
+}
