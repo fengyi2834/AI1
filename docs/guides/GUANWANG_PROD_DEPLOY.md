@@ -3,7 +3,7 @@
 这份说明对应当前项目的“最快上线版本”：
 
 - 域名：`kefuceshi2.5593102.top`
-- 服务器：`43.99.50.75`
+- 服务器：`43.99.63.64`
 - 系统：`Ubuntu 22.04`
 - 站点入口：`guanwang/`
 - 业务入口：`scripts/demo-server.ps1`
@@ -48,7 +48,7 @@ CHAT_BACKEND=fastgpt_prefer
 FASTGPT_APP_API_URL=http://127.0.0.1:3100/api/v1/chat/completions
 FASTGPT_APP_API_KEY=fgtest-001
 
-ALLOWED_ORIGINS=http://kefuceshi2.5593102.top,http://43.99.50.75
+ALLOWED_ORIGINS=http://kefuceshi2.5593102.top,http://43.99.63.64
 ```
 
 说明：
@@ -114,7 +114,7 @@ sudo pwsh -File ./scripts/start-local.ps1
 
 检查：
 
-- `http://43.99.50.75:3100`
+- `http://43.99.63.64:3100`
 - `http://kefuceshi2.5593102.top:3100`
 
 ## 8. 启动官网 AI 服务

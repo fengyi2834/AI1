@@ -1,8 +1,0 @@
-{
-  "modal_title": "Robot Distribution Details",
-  "table": {
-    "rank": "Rank",
-    "robot": "Robot",
-    "trigger_count": "Trigger Count"
-  }
-}

@@ -107,7 +107,7 @@ function createMessageRow(role, text, imageUrl) {
     img.src = imageUrl;
     img.className = "chat-bubble-image";
     img.alt = tt("alt.chat_image");
-    img.style.cssText = "max-width:200px;max-height:200px;border-radius:12px;display:block;margin-bottom:8px;";
+    img.className = "chat-bubble-image";
     bubble.appendChild(img);
   }
 
@@ -153,6 +153,120 @@ function initializeChatWidget(widget) {
     imageInput.value = '';
     imageBtn.classList.remove('has-image');
     if (imagePreview) imagePreview.hidden = true;
+  }
+
+  // ====== 多功能 "+" 菜单（表情/图片/转人工） ======
+  var EMOJI_LIST = ['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','😉','😌','😍','🥰','😘','😋','😛','😝','🤪','😎','🤩','🥳','👍','👎','👏','🙌','💪','🤝','👌','✌️','❤️','🧡','💛','💚','💙','💜','🖤','🤍','💔','🔥','⭐','🌟','✨','💫','🎉','🎊','🎈','🎂','🎁','🏆','✅','❌','❓','❗','⚠️','💯','🔴','🟢','🔵','🙏','🤔','😷','🤒','💊','🏠','🏢','🏥','🏨','📞','📱','💻'];
+
+  // 隐藏原始 label，创建独立的 "+" 按钮
+  if (imageBtn) imageBtn.style.display = 'none';
+  var plusBtn = document.createElement('button');
+  plusBtn.type = 'button';
+  plusBtn.textContent = '+';
+  plusBtn.title = '更多功能';
+  plusBtn.style.cssText = 'flex-shrink:0;min-width:26px;min-height:26px;width:26px;height:26px;border:1px solid rgba(47,122,79,0.18);border-radius:50%;background:#f6faf7;color:#5b846b;font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;line-height:1';
+  // 插入到 input 前面
+  if (input) input.parentNode.insertBefore(plusBtn, input);
+
+  // 创建 "+" 弹出面板（竖排菜单）
+  var plusMenu = document.createElement('div');
+  plusMenu.style.cssText = 'display:none;position:absolute;bottom:50px;left:14px;background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:4px;box-shadow:0 -4px 24px rgba(0,0,0,0.08);z-index:1000';
+  plusMenu.innerHTML = '' +
+    '<div data-action="emoji" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 12px;border-radius:8px;white-space:nowrap" onmouseover="this.style.background=\'#f5f5f5\'" onmouseout="this.style.background=\'transparent\'"><span style="font-size:16px">😊</span><span style="font-size:13px;color:#333">表情</span></div>' +
+    '<div data-action="image" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 12px;border-radius:8px;white-space:nowrap" onmouseover="this.style.background=\'#f5f5f5\'" onmouseout="this.style.background=\'transparent\'"><span style="font-size:16px">📷</span><span style="font-size:13px;color:#333">图片</span></div>' +
+    '<div data-action="handoff" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 12px;border-radius:8px;white-space:nowrap" onmouseover="this.style.background=\'#f5f5f5\'" onmouseout="this.style.background=\'transparent\'"><span style="font-size:16px">🎧</span><span style="font-size:13px;color:#e74c3c">转人工</span></div>';
+  form.parentNode.insertBefore(plusMenu, form.nextSibling);
+
+  // 创建表情面板
+  var emojiPanel = document.createElement('div');
+  emojiPanel.style.cssText = 'display:none;position:absolute;bottom:50px;right:12px;background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:999;width:300px;max-height:220px;overflow-y:auto';
+  emojiPanel.innerHTML = '<div style="display:grid;grid-template-columns:repeat(10,1fr);gap:4px">' + EMOJI_LIST.map(function(e) { return '<span style="cursor:pointer;font-size:18px;padding:4px;text-align:center;border-radius:4px" onmouseover="this.style.background=\"#f0f0f0\"}" onmouseout="this.style.background=\"none\"">' + e + '</span>'; }).join('') + '</div>';
+  form.parentNode.insertBefore(emojiPanel, form.nextSibling);
+
+  // "+" 按钮点击 → 切换菜单
+  plusBtn.addEventListener('click', function(ev) { ev.stopPropagation(); plusMenu.style.display = plusMenu.style.display === 'none' ? 'block' : 'none'; });
+
+  // 菜单选项点击
+  plusMenu.addEventListener('click', function(ev) {
+    var item = ev.target.closest('[data-action]');
+    if (!item) return;
+    var action = item.getAttribute('data-action');
+    plusMenu.style.display = 'none';
+    if (action === 'emoji') { emojiPanel.style.display = 'block'; }
+    else if (action === 'image') { if (imageInput) imageInput.click(); }
+    else if (action === 'handoff') { triggerHandoff(); }
+  });
+
+  // emoji 面板点击 → 插入表情
+  emojiPanel.addEventListener('click', function(ev) {
+    var span = ev.target.closest('span'); if (!span) return;
+    var e = span.textContent.trim(), v = input.value, s = input.selectionStart || v.length;
+    input.value = v.substring(0, s) + e + v.substring(s); input.selectionStart = input.selectionEnd = s + e.length;
+    input.focus(); emojiPanel.style.display = 'none';
+  });
+
+  // 点击外部关闭所有弹窗
+  document.addEventListener('click', function(ev) {
+    if (!plusMenu.contains(ev.target) && ev.target !== plusBtn) plusMenu.style.display = 'none';
+    if (!emojiPanel.contains(ev.target) && !plusMenu.contains(ev.target) && ev.target !== plusBtn) emojiPanel.style.display = 'none';
+  });
+
+  // ====== 转人工逻辑 ======
+  var handoffActive = false, handoffId = '';
+
+  async function triggerHandoff() {
+    if (handoffActive) return;
+    try {
+      // 收集聊天记录（含图片）带给坐席
+      var historyForHandoff = [];
+      var rows = body.querySelectorAll('.chat-row');
+      rows.forEach(function(row) {
+        var bubble = row.querySelector('.chat-bubble');
+        var img = row.querySelector('.chat-bubble-image');
+        var p = bubble ? bubble.querySelector('p') : null;
+        if (img || p) {
+          historyForHandoff.push({
+            role: row.classList.contains('chat-row-user') ? 'user' : 'assistant',
+            text: p ? p.textContent : '',
+            imageUrl: img ? img.src : ''
+          });
+        }
+      });
+      var res = await fetch(resolveApiUrl().replace('/api/ai/chat', '/api/ai/handoff'), {
+        method: 'POST', headers: getAuthHeaders(),
+        body: JSON.stringify({ userId: userId, conversationId: conversationId, reason: '客户请求转人工', history: historyForHandoff })
+      });
+      var data = await res.json().catch(function(){ return {} });
+      if (data.ok) {
+        handoffId = data.handoffId; handoffActive = true;
+        appendMessage('assistant', data.message || '已通知顾问，请稍候');
+        pollHandoffMessages();
+      } else if (data.offline) {
+        appendMessage('assistant', data.message || '顾问当前不在线');
+      } else {
+        appendMessage('assistant', '转人工失败，请拨打电话 0779-8525688');
+      }
+    } catch(e) {}
+  }
+
+  async function pollHandoffMessages() {
+    if (!handoffId || !handoffActive) return;
+    try {
+      var res = await fetch('/api/ai/handoff-status?id=' + handoffId); var data = await res.json();
+      if (data.ok && data.status === 'active') {
+        var seen = []; body.querySelectorAll('.chat-row-agent .chat-bubble').forEach(function(b){ seen.push(b.textContent.trim()); });
+        (data.messages || []).forEach(function(m) {
+          if (m.role !== 'agent') return;
+          var dedupKey = m.imageUrl || m.text.trim();
+          if (seen.indexOf(dedupKey) !== -1) return;
+          seen.push(dedupKey);
+          var label = m.text ? '【顾问】' + m.text : '【顾问】';
+          appendMessage('assistant', label, m.imageUrl);
+        });
+      }
+      if (data.status === 'completed') { handoffActive = false; appendMessage('assistant', '顾问已结束会话，可再次转人工或拨打电话 0779-8525688。'); return; }
+    } catch(e) {}
+    if (handoffActive) setTimeout(pollHandoffMessages, 3000);
   }
 
   if (!launcher || !panel || !body || !form || !input || !submitButton || !imageInput) {
@@ -274,6 +388,25 @@ function initializeChatWidget(widget) {
     chatHistory.push({ role: "user", text: text || "" });
 
     try {
+      // 转人工模式：消息发给坐席而不是 AI
+      if (handoffActive && handoffId) {
+        await fetch('/api/ai/handoff-message', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            handoffId: handoffId,
+            text: text || '',
+            imageDataUrl: imageDataToSend || undefined,
+            imageName: imageNameToSend || undefined
+          })
+        });
+        loading = false;
+        submitButton.disabled = false;
+        submitButton.textContent = tt("chat.send");
+        clearImageSelection();
+        return;
+      }
+
       var response = await fetch(resolveApiUrl(), {
         method: "POST",
         headers: getAuthHeaders(),

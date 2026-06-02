@@ -43,15 +43,15 @@
         <!-- 语言切换器（桌面端） -->
         <div class="lang-switcher">
           <button class="lang-switcher-toggle" type="button" aria-expanded="false" aria-label="切换语言">
-            <span class="lang-flag">🇨🇳</span>
+            <img class="lang-flag" src="https://flagcdn.com/w20/cn.png" width="20" height="14" alt="CN" style="vertical-align:middle;border-radius:2px">
             <span class="lang-name">简体中文</span>
             <svg class="lang-switcher-arrow" width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>
           </button>
           <div class="lang-switcher-menu" hidden>
-            <button type="button" data-lang="zh-CN"><span class="lang-flag">🇨🇳</span><span>简体中文</span></button>
-            <button type="button" data-lang="en-US"><span class="lang-flag">🇺🇸</span><span>English</span></button>
-            <button type="button" data-lang="ja-JP"><span class="lang-flag">🇯🇵</span><span>日本語</span></button>
-            <button type="button" data-lang="ko-KR"><span class="lang-flag">🇰🇷</span><span>한국어</span></button>
+            <button type="button" data-lang="zh-CN"><span class="lang-flag"><img class="lang-flag" src="https://flagcdn.com/w20/cn.png" width="20" height="14" alt="CN" style="vertical-align:middle;border-radius:2px"></span><span>简体中文</span></button>
+            <button type="button" data-lang="en-US"><span class="lang-flag"><img class="lang-flag" src="https://flagcdn.com/w20/us.png" width="20" height="14" alt="US" style="vertical-align:middle;border-radius:2px"></span><span>English</span></button>
+            <button type="button" data-lang="ja-JP"><span class="lang-flag"><img class="lang-flag" src="https://flagcdn.com/w20/jp.png" width="20" height="14" alt="JP" style="vertical-align:middle;border-radius:2px"></span><span>日本語</span></button>
+            <button type="button" data-lang="ko-KR"><span class="lang-flag"><img class="lang-flag" src="https://flagcdn.com/w20/kr.png" width="20" height="14" alt="KR" style="vertical-align:middle;border-radius:2px"></span><span>한국어</span></button>
           </div>
         </div>
 
@@ -86,14 +86,12 @@
                 <span class="chat-image-preview-name"></span>
                 <button type="button" class="chat-image-preview-remove" title="移除图片" data-i18n-title="chat.remove_image">&times;</button>
               </div>
+              <label class="chat-image-btn" title="发送图片" data-i18n-title="chat.send_image">
+                <input type="file" accept="image/*" style="display:none" class="chat-image-input">
+                +
+              </label>
               <input name="draft" type="text" placeholder="请输入你的问题" autocomplete="off" data-i18n-placeholder="chat.placeholder">
-              <div class="chat-form-actions">
-                <label class="chat-image-btn" title="发送图片" data-i18n-title="chat.send_image">
-                  <input type="file" accept="image/*" style="display:none" class="chat-image-input">
-                  &#x1F4F7;
-                </label>
-                <button type="submit" data-i18n="chat.send">发送</button>
-              </div>
+              <button type="submit" data-i18n="chat.send">发送</button>
             </form>
           </div>
         </div>
@@ -126,15 +124,15 @@
       <!-- 语言切换器（手机端） -->
       <div class="lang-switcher-mobile">
         <button class="lang-switcher-mobile-toggle" type="button" aria-expanded="false" aria-label="切换语言">
-          <span class="lang-flag">🇨🇳</span>
+          <span class="lang-flag"><img class="lang-flag" src="https://flagcdn.com/w20/cn.png" width="20" height="14" alt="CN" style="vertical-align:middle;border-radius:2px"></span>
           <span class="lang-name">简体中文</span>
           <svg class="lang-switcher-arrow" width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>
         </button>
         <div class="lang-switcher-mobile-menu" hidden>
-          <button type="button" data-lang="zh-CN"><span class="lang-flag">🇨🇳</span><span>简体中文</span></button>
-          <button type="button" data-lang="en-US"><span class="lang-flag">🇺🇸</span><span>English</span></button>
-          <button type="button" data-lang="ja-JP"><span class="lang-flag">🇯🇵</span><span>日本語</span></button>
-          <button type="button" data-lang="ko-KR"><span class="lang-flag">🇰🇷</span><span>한국어</span></button>
+          <button type="button" data-lang="zh-CN"><span class="lang-flag"><img class="lang-flag" src="https://flagcdn.com/w20/cn.png" width="20" height="14" alt="CN" style="vertical-align:middle;border-radius:2px"></span><span>简体中文</span></button>
+          <button type="button" data-lang="en-US"><span class="lang-flag"><img class="lang-flag" src="https://flagcdn.com/w20/us.png" width="20" height="14" alt="US" style="vertical-align:middle;border-radius:2px"></span><span>English</span></button>
+          <button type="button" data-lang="ja-JP"><span class="lang-flag"><img class="lang-flag" src="https://flagcdn.com/w20/jp.png" width="20" height="14" alt="JP" style="vertical-align:middle;border-radius:2px"></span><span>日本語</span></button>
+          <button type="button" data-lang="ko-KR"><span class="lang-flag"><img class="lang-flag" src="https://flagcdn.com/w20/kr.png" width="20" height="14" alt="KR" style="vertical-align:middle;border-radius:2px"></span><span>한국어</span></button>
         </div>
       </div>
 
@@ -168,14 +166,12 @@
               <span class="chat-image-preview-name"></span>
               <button type="button" class="chat-image-preview-remove" title="移除图片" data-i18n-title="chat.remove_image">&times;</button>
             </div>
+            <label class="chat-image-btn" title="发送图片" data-i18n-title="chat.send_image">
+              <input type="file" accept="image/*" style="display:none" class="chat-image-input">
+              +
+            </label>
             <input name="draft" type="text" placeholder="请输入你的问题" autocomplete="off" data-i18n-placeholder="chat.placeholder">
-            <div class="chat-form-actions">
-              <label class="chat-image-btn" title="发送图片" data-i18n-title="chat.send_image">
-                <input type="file" accept="image/*" style="display:none" class="chat-image-input">
-                &#x1F4F7;
-              </label>
-              <button type="submit" data-i18n="chat.send">发送</button>
-            </div>
+            <button type="submit" data-i18n="chat.send">发送</button>
           </form>
         </div>
       </div>

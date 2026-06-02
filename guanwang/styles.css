@@ -792,18 +792,29 @@ a:focus {
   word-break: break-word;
 }
 
+.chat-bubble-image {
+  max-width: 200px;
+  max-height: 200px;
+  width: auto;
+  height: auto;
+  border-radius: 12px;
+  display: block;
+  margin: 0 auto 8px;
+}
+
 .chat-row-user .chat-bubble {
   background: linear-gradient(135deg, rgba(47, 122, 79, 0.18), rgba(76, 169, 109, 0.14));
   color: #1a4e33;
 }
 
 .chat-form {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  padding: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 14px;
   border-top: 1px solid rgba(19, 48, 71, 0.08);
   background: #fff;
+  align-items: center;
 }
 
 .chat-form input {
@@ -875,13 +886,14 @@ a:focus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 26px;
+  height: 26px;
   border: 1px solid rgba(47, 122, 79, 0.18);
-  border-radius: 14px;
+  border-radius: 50%;
   background: #f6faf7;
   color: #5b846b;
-  font-size: 18px;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 180ms ease;
   flex: 0 0 auto;
@@ -903,7 +915,8 @@ a:focus {
   display: flex;
   align-items: center;
   gap: 8px;
-  grid-column: 1 / -1;
+  width: 100%;
+  flex-basis: 100%;
   padding: 6px 12px;
   border-radius: 10px;
   background: #f0f7f1;
@@ -1148,10 +1161,6 @@ a:focus {
     border-radius: 24px;
   }
 
-  .chat-form {
-    grid-template-columns: 1fr;
-  }
-
   .chat-form button {
     height: 46px;
   }
@@ -1166,8 +1175,8 @@ a:focus {
   }
 
   .chat-image-btn {
-    width: 46px;
-    height: 46px;
+    width: 26px;
+    height: 26px;
   }
 
   .footer-grid {
@@ -1425,7 +1434,6 @@ a:focus {
 
   .chat-form {
     padding: 10px;
-    grid-template-columns: 1fr;
   }
 
   .chat-form input {
@@ -1447,8 +1455,8 @@ a:focus {
   }
 
   .chat-image-btn {
-    width: 44px;
-    height: 44px;
+    width: 26px;
+    height: 26px;
   }
 
   .chat-image-preview {

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>亿库客服坐席后台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f0f2f5;color:#1a1a1a}
+
+/* 登录页 */
+.login-wrap{display:flex;justify-content:center;align-items:center;min-height:100vh;background:linear-gradient(135deg,#173244,#25524a)}
+.login-card{background:#fff;border-radius:12px;padding:40px 36px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.login-card h1{font-size:22px;text-align:center;margin-bottom:8px;color:#173244}
+.login-card p{text-align:center;color:#888;font-size:13px;margin-bottom:28px}
+.login-card label{display:block;font-size:14px;font-weight:600;margin-bottom:4px;color:#333}
+.login-card input{width:100%;padding:10px 12px;border:1px solid #d9d9d9;border-radius:8px;font-size:14px;margin-bottom:16px;outline:none}
+.login-card input:focus{border-color:#2f7a4f}
+.login-card button{width:100%;padding:11px;border:none;border-radius:8px;background:#2f7a4f;color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+.login-card button:hover{background:#1d5f3b}
+.login-error{color:#e74c3c;font-size:13px;text-align:center;margin-top:10px;display:none}
+
+/* 主界面 */
+.app-wrap{display:flex;height:100vh;display:none}
+.sidebar{width:280px;background:#fff;border-right:1px solid #e8e8e8;display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-head{padding:14px 16px;border-bottom:1px solid #e8e8e8;font-size:14px;font-weight:700;color:#173244;display:flex;justify-content:space-between;align-items:center}
+.sidebar-tabs{display:flex;border-bottom:1px solid #e8e8e8}
+.sidebar-tab{flex:1;padding:10px 0;text-align:center;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:#888;background:none}
+.sidebar-tab.active{border-bottom-color:#2f7a4f;color:#2f7a4f;font-weight:600}
+.sidebar-tab .badge{background:#e74c3c;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px}
+.sidebar-list{flex:1;overflow-y:auto}
+.sidebar-item{padding:12px 16px;border-bottom:1px solid #f5f5f5;cursor:pointer;display:flex;align-items:center;gap:8px}
+.sidebar-item:hover{background:#f9fafb}
+.sidebar-item.active{background:#eef4ef;border-left:3px solid #2f7a4f}
+.sidebar-item .name{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px}
+.sidebar-item .name .reg-badge{font-size:10px;background:#e8f5e9;color:#2f7a4f;padding:1px 6px;border-radius:8px}
+.sidebar-item .preview{font-size:12px;color:#999;margin-top:3px}
+.sidebar-item .meta{font-size:11px;color:#bbb;margin-top:2px;display:flex;gap:12px}
+.sidebar-foot{padding:12px 16px;border-top:1px solid #e8e8e8;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#666}
+.sidebar-foot button{padding:4px 12px;border:1px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;font-size:12px}
+.sidebar-foot button:hover{background:#f5f5f5}
+.sidebar-foot .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+.sidebar-foot .dot.online{background:#2f7a4f}
+.sidebar-foot .dot.offline{background:#e74c3c}
+
+/* 接管队列条目 */
+.handoff-item{padding:12px 16px;border-bottom:1px solid #f5f5f5;cursor:pointer;border-left:3px solid #e74c3c}
+.handoff-item:hover{background:#fff5f5}
+.handoff-item .h-reason{font-size:13px;font-weight:600;color:#c0392b}
+.handoff-item .h-user{font-size:12px;color:#666;margin-top:2px}
+.handoff-item .h-time{font-size:11px;color:#bbb;margin-top:2px}
+.handoff-item .h-join-btn{padding:4px 14px;border:none;border-radius:4px;background:#e74c3c;color:#fff;font-size:12px;cursor:pointer;margin-top:6px}
+.handoff-item .h-join-btn:hover{background:#c0392b}
+
+/* 聊天区域 */
+.main-area{flex:1;display:flex;flex-direction:column}
+.main-empty{flex:1;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:15px;text-align:center;padding:40px}
+.main-chat{flex:1;display:flex;flex-direction:column;display:none}
+.chat-header{padding:12px 16px;background:#fff;border-bottom:1px solid #e8e8e8;display:flex;justify-content:space-between;align-items:center}
+.chat-header .title{font-size:14px;font-weight:600}
+.chat-header .actions{display:flex;gap:6px}
+.chat-header .actions button{padding:4px 12px;border:1px solid #d9d9d9;border-radius:6px;background:#fff;font-size:12px;cursor:pointer}
+.chat-header .actions button.primary{background:#2f7a4f;color:#fff;border-color:#2f7a4f}
+.chat-header .actions button.danger{background:#e74c3c;color:#fff;border-color:#e74c3c}
+.chat-msgs{flex:1;overflow-y:auto;padding:12px 16px;background:#f6f8f7}
+.chat-msg{margin-bottom:12px}
+.chat-msg>div{display:inline-block;max-width:80%}
+.chat-msg.user{text-align:right}
+.chat-msg.user>div{text-align:left}
+.chat-msg.system{text-align:center}
+.chat-msg .time{font-size:11px;color:#999;margin-bottom:2px}
+.chat-msg .bubble{display:inline-block;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.6;word-break:break-word}
+.chat-msg.user .bubble{background:#2f7a4f;color:#fff}
+.chat-msg.agent .bubble{background:#fff;border:1px solid #2f7a4f;color:#1a4e33}
+.chat-msg.ai .bubble{background:#fff;border:1px solid #eee}
+.chat-msg.system .bubble{background:none;color:#bbb;font-size:12px;padding:4px}
+.chat-input-area{padding:12px 16px;background:#fff;border-top:1px solid #e8e8e8;display:flex;gap:8px;align-items:center}
+.chat-input-area input{flex:1;padding:10px 14px;border:1px solid #d9d9d9;border-radius:8px;font-size:14px;outline:none}
+.chat-input-area input:focus{border-color:#2f7a4f}
+.chat-input-area button{padding:10px 18px;border:none;border-radius:8px;background:#2f7a4f;color:#fff;font-size:14px;font-weight:600;cursor:pointer}
+.chat-input-area button:hover{background:#1d5f3b}
+.emoji-panel{position:absolute;bottom:60px;right:16px;background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:100;width:320px;max-height:260px;overflow-y:auto;display:none}
+.emoji-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+.emoji-grid span{cursor:pointer;font-size:18px;padding:4px;text-align:center;border-radius:4px}
+.emoji-grid span:hover{background:#f0f0f0}
+
+/* 通知 */
+.notify-toast{position:fixed;top:16px;right:16px;background:#2f7a4f;color:#fff;padding:12px 20px;border-radius:8px;font-size:14px;z-index:999;display:none;box-shadow:0 8px 24px rgba(0,0,0,0.2)}
+</style>
+</head>
+<body>
+
+<!-- 登录 -->
+<div class="login-wrap" id="loginPage">
+  <div class="login-card">
+    <h1>亿库客服后台</h1>
+    <p>请使用坐席账号登录</p>
+    <label>账号</label>
+    <input id="loginUsername" type="text" placeholder="请输入账号" autocomplete="username">
+    <label>密码</label>
+    <input id="loginPassword" type="password" placeholder="请输入密码" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">登 录</button>
+    <div class="login-error" id="loginError">账号或密码错误</div>
+  </div>
+</div>
+
+<!-- 主界面 -->
+<div class="app-wrap" id="appPage">
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <button class="sidebar-tab active" onclick="switchTab('chat')">会话</button>
+      <button class="sidebar-tab" onclick="switchTab('handoff')" id="handoffTab">待接入<span class="badge" id="handoffBadge" style="display:none">0</span></button>
+    </div>
+    <div class="sidebar-list" id="sidebarList"></div>
+    <div class="sidebar-foot">
+      <span><span class="dot online"></span><span id="agentName">管理员</span></span>
+      <button onclick="doLogout()">退出</button>
+    </div>
+  </div>
+
+  <div class="main-area">
+    <div class="main-empty" id="mainEmpty">👈 选择会话或待接入工单</div>
+    <div class="main-chat" id="mainChat">
+      <div class="chat-header">
+        <span class="title" id="chatTitle">会话</span>
+        <span class="actions" id="chatActions"></span>
+      </div>
+      <div class="chat-msgs" id="chatMsgs"></div>
+      <div class="chat-input-area" id="chatInputArea">
+        <button onclick="toggleEmoji()" style="background:none;border:none;font-size:20px;cursor:pointer;flex-shrink:0">😊</button>
+        <label id="agentImgBtn" title="发送图片" style="cursor:pointer;font-size:16px;flex-shrink:0;padding:2px 4px;border-radius:6px;border:1px solid transparent;background:none;line-height:1">+<input type="file" accept="image/*" style="display:none" id="agentImgInput"></label>
+        <input id="chatInput" type="text" placeholder="输入回复..." onkeydown="if(event.key==='Enter')sendReply()">
+        <button onclick="sendReply()">发送</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- emoji -->
+<div class="emoji-panel" id="emojiPanel"><div class="emoji-grid" id="emojiGrid"></div></div>
+<div class="notify-toast" id="notifyToast"></div>
+
+<script>
+var TOKEN='', AGENT_NAME='', currentTab='chat', currentHandoff='', currentConvId='';
+var selectedImage=null, selectedImageName='';
+var EMOJIS=['😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','😉','😌','😍','🥰','😘','😋','😛','😝','🤪','😎','🤩','🥳','👍','👎','👏','🙌','💪','🤝','👌','✌️','❤️','🧡','💛','💚','💙','💜','🖤','🤍','💔','🔥','⭐','🌟','✨','💫','🎉','🎊','🎈','🎂','🎁','🏆','✅','❌','❓','❗','⚠️','💯','🔴','🟢','🔵','🙏','🤔','😷','🤒','💊','🏠','🏢','🏥','🏨','📞','📱','💻'];
+
+// ====== Emoji ======
+document.getElementById('emojiGrid').innerHTML = EMOJIS.map(function(e){return '<span onclick="insertEmoji(\''+e+'\')">'+e+'</span>'}).join('');
+
+function toggleEmoji(){var p=document.getElementById('emojiPanel');p.style.display=p.style.display==='block'?'none':'block'}
+function insertEmoji(e){var inp=document.getElementById('chatInput');var s=inp.selectionStart||inp.value.length;inp.value=inp.value.substring(0,s)+e+inp.value.substring(s);inp.selectionStart=inp.selectionEnd=s+e.length;inp.focus();document.getElementById('emojiPanel').style.display='none'}
+document.addEventListener('click',function(ev){var p=document.getElementById('emojiPanel');if(p.style.display==='block'&&!p.contains(ev.target)&&ev.target.onclick!==toggleEmoji)p.style.display='none'});
+
+// ====== 图片上传 ======
+document.getElementById('agentImgInput').addEventListener('change',function(){
+  var f=this.files[0];if(!f)return;
+  if(!['image/png','image/jpeg','image/webp'].includes(f.type)){alert('仅支持 PNG/JPG/WebP');return}
+  if(f.size>10*1024*1024){alert('图片不能超过10MB');return}
+  var r=new FileReader();
+  r.onload=function(){selectedImage=r.result;selectedImageName=f.name;
+    var btn=document.getElementById('agentImgBtn');btn.style.background='#e8f5e9';btn.style.borderColor='#2f7a4f'}
+  r.readAsDataURL(f);
+});
+
+// ====== 通知 ======
+function notify(msg){var t=document.getElementById('notifyToast');t.textContent=msg;t.style.display='block';setTimeout(function(){t.style.display='none'},4000)}
+
+// ====== 登录 ======
+async function doLogin(){
+  var u=document.getElementById('loginUsername').value.trim(),p=document.getElementById('loginPassword').value.trim();
+  if(!u||!p)return;
+  try{
+    var r=await fetch('/api/agent/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    var d=await r.json();
+    if(d.ok){TOKEN=d.token;AGENT_NAME=d.name;localStorage.setItem('agent_token',TOKEN);localStorage.setItem('agent_name',AGENT_NAME);showApp()}else{alert('登录失败：'+(d.message||'账号或密码错误'))}
+  }catch(e){alert('网络错误')}
+}
+
+function showApp(){document.getElementById('loginPage').style.display='none';document.getElementById('appPage').style.display='flex';document.getElementById('agentName').textContent=AGENT_NAME;switchTab('chat')}
+function doLogout(){localStorage.removeItem('agent_token');localStorage.removeItem('agent_name');TOKEN='';AGENT_NAME='';document.getElementById('loginPage').style.display='flex';document.getElementById('appPage').style.display='none'}
+
+// 自动登录
+(function(){
+  var t=localStorage.getItem('agent_token'),n=localStorage.getItem('agent_name');
+  if(t&&n){fetch('/api/agent/me',{headers:{'Authorization':'Bearer '+t}}).then(function(r){return r.json()}).then(function(d){if(d.ok){TOKEN=t;AGENT_NAME=n;showApp()}else{localStorage.removeItem('agent_token');localStorage.removeItem('agent_name')}}).catch(function(){})}
+})();
+
+// ====== Tab切换 ======
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.sidebar-tab').forEach(function(el){el.classList.toggle('active',el.textContent.includes(tab==='chat'?'会话':'待接入'))});
+  document.getElementById('mainChat').style.display='none';document.getElementById('mainEmpty').style.display='flex';
+  currentHandoff='';
+  if(tab==='chat')loadConversations();else loadHandoffQueue();
+}
+
+// ====== 会话列表 ======
+async function loadConversations(){
+  if(currentTab!=='chat')return;
+  try{
+    var r=await fetch('/api/agent/conversations',{headers:{'Authorization':'Bearer '+TOKEN}});
+    if(r.status===401){doLogout();return}
+    var d=await r.json();
+    if(d.ok)renderChatSidebar(d.conversations||[]);
+  }catch(e){}
+  setTimeout(loadConversations,5000);
+}
+
+function renderChatSidebar(convs){
+  var h='';
+  convs.forEach(function(c){
+    var rawId=c.userId||'unknown';
+    var name;
+    if(rawId.indexOf('anon')===0){name='匿名-'+rawId.replace(/^anon-?/,'').substring(0,8)}
+    else if(rawId.indexOf('@')>0){name=rawId.split('@')[0]}
+    else{name=rawId.length>12?rawId.substring(0,10)+'..':rawId}
+    var regTag=c.isRegistered?'<span class="reg-badge">已注册</span>':'';
+    var roleTag=c.lastRole==='user'?'💬':'🤖';
+    h+='<div class="sidebar-item"><div onclick="viewConversation(\''+c.id+'\',\''+name+'\')" style="flex:1;cursor:pointer"><div class="name">'+roleTag+' '+name+' '+regTag+'</div><div class="preview">'+(c.preview||'')+'</div><div class="meta"><span>'+c.messageCount+'条</span></div></div><button class="h-join-btn" style="background:#2f7a4f;margin-top:0;flex-shrink:0" onclick="event.stopPropagation();agentJoinConversation(\''+c.id+'\',\''+name+'\')">接入</button></div>';
+  });
+  if(!h)h='<div style="text-align:center;color:#bbb;padding:40px;font-size:13px">暂无活跃会话</div>';
+  document.getElementById('sidebarList').innerHTML=h;
+}
+
+async function viewConversation(id,name){
+  currentConvId=id;
+  document.getElementById('mainEmpty').style.display='none';document.getElementById('mainChat').style.display='flex';
+  document.getElementById('chatTitle').textContent='会话：'+name;
+  document.getElementById('chatActions').innerHTML='<button class="primary" onclick="agentJoinConversation(\''+id+'\',\''+name+'\')">接入</button>';
+  document.getElementById('chatInputArea').style.display='none';
+  try{
+    var r=await fetch('/api/agent/conversation-messages?key='+encodeURIComponent(id),{headers:{'Authorization':'Bearer '+TOKEN}});
+    var d=await r.json();
+    if(d.ok)renderMessages(d.messages||[]);
+  }catch(e){}
+}
+
+// ====== 人工接管队列 ======
+async function loadHandoffQueue(){
+  if(currentTab!=='handoff')return;
+  try{
+    var r=await fetch('/api/agent/handoff-queue',{headers:{'Authorization':'Bearer '+TOKEN}});
+    if(r.status===401){doLogout();return}
+    var d=await r.json();
+    if(d.ok)renderHandoffSidebar(d.queue||[],d.isWorkHours);
+    // 更新在线状态
+    var dot=document.querySelector('.sidebar-foot .dot');
+    if(dot){dot.className='dot '+(d.isWorkHours?'online':'offline');dot.title=d.isWorkHours?'工作时间':'非工作时间'}
+  }catch(e){}
+  setTimeout(loadHandoffQueue,3000);
+}
+
+function renderHandoffSidebar(queue,isWork){
+  var badge=document.getElementById('handoffBadge');
+  var pending=queue.filter(function(q){return q.status==='pending'}).length;
+  if(pending>0){badge.style.display='inline';badge.textContent=pending}else{badge.style.display='none'}
+  var h='';
+  if(!isWork)h+='<div style="text-align:center;color:#e74c3c;padding:12px;font-size:12px;background:#fff5f5">⏰ 非工作时间，客户转人工会提示等待</div>';
+  queue.forEach(function(q){
+    var isPending=q.status==='pending';
+    h+='<div class="handoff-item"><div class="h-reason">'+q.reason+'</div><div class="h-user">'+q.userId+'</div><div class="h-time">'+q.messageCount+'条消息 | '+(q.agent||'等待接入')+'</div>';
+    if(isPending)h+='<button class="h-join-btn" onclick="joinHandoff(\''+q.id+'\')">接入</button>';
+    else if(q.status==='active')h+='<button class="h-join-btn" style="background:#2f7a4f" onclick="openActiveHandoff(\''+q.id+'\')">查看</button>';
+    h+='</div>';
+  });
+  if(!h)h='<div style="text-align:center;color:#bbb;padding:40px;font-size:13px">暂无待接入工单</div>';
+  document.getElementById('sidebarList').innerHTML=h;
+}
+
+// 坐席接入
+async function joinHandoff(hid){
+  try{
+    var r=await fetch('/api/agent/join',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},body:JSON.stringify({handoffId:hid})});
+    var d=await r.json();
+    if(d.ok){currentHandoff=hid;showHandoffChat(hid,d.messages||[]);notify('已接入工单 '+hid)}
+  }catch(e){alert('接入失败')}
+}
+
+async function openActiveHandoff(hid){
+  currentHandoff=hid;
+  try{
+    var r=await fetch('/api/ai/handoff-status?id='+hid,{headers:{'Authorization':'Bearer '+TOKEN}});
+    var d=await r.json();
+    if(d.ok)showHandoffChat(hid,d.messages||[]);
+  }catch(e){}
+}
+
+function showHandoffChat(hid,msgs){
+  document.getElementById('mainEmpty').style.display='none';document.getElementById('mainChat').style.display='flex';
+  document.getElementById('chatTitle').textContent='工单 '+hid;
+  document.getElementById('chatActions').innerHTML='<button class="danger" onclick="finishHandoff(\''+hid+'\')">结束</button>';
+  document.getElementById('chatInputArea').style.display='flex';
+  renderMessages(msgs);
+}
+
+// 坐席主动接入会话
+async function agentJoinConversation(convId, name){
+  if(!confirm('确认接入会话 '+name+'？'))return;
+  try{
+    // 先获取聊天历史
+    var historyMsgs=[];
+    try{
+      var hr=await fetch('/api/agent/conversation-messages?key='+encodeURIComponent(convId),{headers:{'Authorization':'Bearer '+TOKEN}});
+      var hd=await hr.json();
+      if(hd.ok&&hd.messages)historyMsgs=hd.messages;
+    }catch(e){}
+    // 创建工单并带历史
+    var r=await fetch('/api/agent/join-conversation',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},body:JSON.stringify({conversationId:convId,history:historyMsgs})});
+    var d=await r.json();
+    if(d.ok){
+      currentHandoff=d.handoffId;
+      document.getElementById('chatTitle').textContent='工单 '+d.handoffId;
+      document.getElementById('chatActions').innerHTML='<button class="danger" onclick="finishHandoff(\''+d.handoffId+'\')">结束</button>';
+      document.getElementById('chatInputArea').style.display='flex';
+      if(d.messages)renderMessages(d.messages);
+      notify('已接入，可回复客户');
+    }else{alert('接入失败：'+(d.message||'未知错误'))}
+  }catch(e){alert('网络错误')}
+}
+
+async function finishHandoff(hid){
+  if(!confirm('确认结束此工单？'))return;
+  try{
+    await fetch('/api/agent/finish',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},body:JSON.stringify({handoffId:hid})});
+    document.getElementById('mainChat').style.display='none';document.getElementById('mainEmpty').style.display='flex';
+    document.getElementById('chatInputArea').style.display='none';
+    currentHandoff='';notify('工单已结束');loadHandoffQueue();
+  }catch(e){}
+}
+
+// ====== 发送回复 ======
+async function sendReply(){
+  var inp=document.getElementById('chatInput'),text=inp.value.trim();
+  if((!text&&!selectedImage)||!currentHandoff)return;
+  try{
+    await fetch('/api/agent/reply',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+TOKEN},body:JSON.stringify({handoffId:currentHandoff,text:text,imageDataUrl:selectedImage||undefined,imageName:selectedImageName||undefined})});
+    inp.value='';
+    selectedImage=null;selectedImageName='';
+    var btn=document.getElementById('agentImgBtn');btn.style.background='';btn.style.borderColor='';
+    // 刷新消息
+    var r=await fetch('/api/ai/handoff-status?id='+currentHandoff,{headers:{'Authorization':'Bearer '+TOKEN}});
+    var d=await r.json();
+    if(d.ok)renderMessages(d.messages||[]);
+  }catch(e){}
+}
+
+// ====== 消息渲染 ======
+function renderMessages(msgs){
+  var h='';
+  msgs.forEach(function(m){
+    var cls=m.role==='user'?'user':(m.role==='agent'?'agent':(m.role==='system'?'system':'ai'));
+    var name=m.role==='user'?'用户':(m.role==='agent'?'坐席':(m.role==='system'?'系统':'AI'));
+    h+='<div class="chat-msg '+cls+'"><div><div class="time">'+name+(m.time?' '+m.time:'')+'</div>';
+    if(m.imageUrl)h+='<img src="'+escapeHtml(m.imageUrl)+'" style="max-width:200px;max-height:200px;border-radius:10px;display:block;margin-bottom:6px">';
+    if(m.text)h+='<div class="bubble">'+escapeHtml(m.text)+'</div>';
+    h+='</div></div>';
+  });
+  var el=document.getElementById('chatMsgs');el.innerHTML=h;el.scrollTop=el.scrollHeight;
+}
+
+function escapeHtml(t){var d=document.createElement('div');d.textContent=t||'';return d.innerHTML}
+
+// ====== 浏览器通知 ======
+if(Notification&&Notification.permission!=='denied')Notification.requestPermission();
+setInterval(function(){
+  if(currentTab!=='handoff'||!TOKEN)return;
+  fetch('/api/agent/handoff-queue',{headers:{'Authorization':'Bearer '+TOKEN}}).then(function(r){return r.json()}).then(function(d){
+    if(!d.ok)return;
+    var pending=d.queue.filter(function(q){return q.status==='pending'}).length;
+    if(pending>0&&Notification.permission==='granted')new Notification('新客户等待接入',{body:pending+'位客户请求人工客服',icon:'/assets/mvp2/yiku-logo.svg'});
+  }).catch(function(){});
+},15000);
+</script>
+</body>
+</html>

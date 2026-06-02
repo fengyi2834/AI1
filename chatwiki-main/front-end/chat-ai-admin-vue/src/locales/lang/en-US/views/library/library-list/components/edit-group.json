@@ -1,7 +1,0 @@
-{
-  "modal_title": "Modify Group",
-  "form_label": "Group Name：",
-  "select_placeholder": "Please Select Group",
-  "error_message": "Please Select Group",
-  "success_message": "Modify Group Successfully"
-}

@@ -1,9 +1,0 @@
-{
-  "status_loading": "読み込み中",
-  "status_playing": "再生中",
-  "hint_click_to_pause": "（クリックで一時停止）",
-  "label_voice_message": "音声メッセージ",
-  "hint_click_to_play": "（クリックで再生）",
-  "msg_playback_failed": "再生失敗：",
-  "msg_audio_playback_error": "音声再生エラー"
-}
